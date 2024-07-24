@@ -24,7 +24,7 @@ jobs:
 
       - name: Requirements
         run: |
-          pip install -qr requirements.txt
+          pip install -qr requirements.txt -r requrements-dev.txt
           pip freeze
           pip check
 
