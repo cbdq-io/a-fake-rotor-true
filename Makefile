@@ -1,4 +1,4 @@
-all: lint build test
+all: clean lint build test
 
 build:
 	docker compose build router
@@ -6,6 +6,12 @@ build:
 
 changelog:
 	PYTHONPATH=. gitchangelog > CHANGELOG.md
+
+clean:
+	docker compose down -t 0
+
+cleanall: clean
+	docker system prune --all --force --volumes
 
 lint:
 	docker run --rm -i hadolint/hadolint < Dockerfile
