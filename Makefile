@@ -22,7 +22,8 @@ tag:
 	@python -c 'import router; print(router.__version__)'
 
 test:
-	PYTHONPATH=.:.. pytest
+	LOG_LEVEL=DEBUG PYTHONPATH=.:.. pytest
+	docker compose up -d --wait
 
 update-requirements:
 	pip freeze > /tmp/requirements.txt

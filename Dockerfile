@@ -12,5 +12,5 @@ RUN useradd \
 USER kr
 WORKDIR /home/kr
 COPY --chown=kr:kr --chmod=0644 requirements.txt /home/kr/requirements.txt
-COPY --chown=kr:kr --chmod=0755 router.py /home/kr/router.py
 RUN pip install --no-cache-dir --user -r requirements.txt
+COPY --chown=kr:kr --chmod=0755 router.py /home/kr/router.py

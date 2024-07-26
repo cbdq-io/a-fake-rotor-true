@@ -1,4 +1,54 @@
 ---
 services:
+  init:
+    command: bash -c "
+      kafka-topics --bootstrap-server kafka:29092 --list
+      && kafka-topics --bootstrap-server kafka:29092 --create --topic input_topic --if-not-exists
+      && kafka-topics --bootstrap-server kafka:29092 --create --topic output_topic --if-not-exists
+      && kafka-topics --bootstrap-server kafka:29092 --list
+      "
+    container_name: init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    image: confluentinc/cp-kafka:7.6.2
+
+  kafka:
+    container_name: kafka
+    environment:
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT'
+      KAFKA_LISTENERS: 'INTERNAL://kafka:29092,CONTROLLER://kafka:29093,EXTERNAL://0.0.0.0:9092'
+      KAFKA_ADVERTISED_LISTENERS: 'INTERNAL://kafka:29092,EXTERNAL://localhost:9092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      LOG_LEVEL: WARN
+    healthcheck:
+      test: kafka-topics --list --bootstrap-server kafka:9092
+      interval: 1s
+      retries: 30
+    image: confluentinc/cp-kafka:7.6.2
+    ports:
+      - 9092:9092
+
   router:
     build: .
+    command: /home/kr/router.py
+    container_name: router
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    environment:
+      KAFKA_CONSUMER_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_CONSUMER_ENABLE_AUTO_COMMIT: false
+      KAFKA_CONSUMER_GROUP_ID: kafka_router_container
+      KAFKA_PRODUCER_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_ROUTER_DLQ_TOPIC_NAME: 'router.dlq'
+      LOG_LEVEL: DEBUG
