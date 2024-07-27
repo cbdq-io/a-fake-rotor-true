@@ -1,0 +1,37 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "dependentSchemas": {
+        "header_jmespath": {
+            "required": [
+                "regexp"
+            ]
+        },
+        "jmespath": {
+            "required": [
+                "regexp"
+            ]
+        }
+    },
+    "properties": {
+        "destination_topic": {
+            "type": "string"
+        },
+        "header_jmespath": {
+            "type": "string"
+        },
+        "jmespath": {
+            "type": "string"
+        },
+        "regexp": {
+            "type": "string"
+        },
+        "source_topic": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "source_topic",
+        "destination_topic"
+    ],
+    "type": "object"
+}

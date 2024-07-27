@@ -25,8 +25,20 @@ For example, an environment variable called
 `KAFKA_CONSUMER_BOOTSTRAP_SERVERS` that is set to `host1:9092,host2:9092`
 will configure `bootstrap.servers=host1:9092,host2:9092` in the consumer.
 
+Please not that `KAFKA_CONSUMER_ENABLE_AUTO_COMMIT` **MUST** be set to "false".
+
 ### Kafka Producer
 
 A similar method of configuration for the consumer, except using a prefix
 of `KAFKA_PRODUCER_`.  So `KAFKA_PRODUCER_BOOTSTRAP_SERVERS` will configure
 `bootstrap.servers` in the producer configuration.
+
+### Other Configuration Items
+
+If no default is provided, the configuration item is mandatory.
+
+| Configuration | Default | Notes |
+| ------------- | ------- | ----- |
+| KAFKA_ROUTER_DLQ_TOPIC_NAME | "" | Will attempt to write messages that no rules apply to this topic.  If blank, the router warn no matches were found for the message and continue. |
+| KAFKA_ROUTER_PROMETHEUS_PORT | 8000 | The port for Prometheus metrics. |
+| LOG_LEVEL     | WARN    | Can be DEBUG, INFO, WARN or ERROR. |

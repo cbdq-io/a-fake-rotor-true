@@ -1,9 +1,5 @@
-attrs==23.2.0
 confluent-kafka==2.5.0
-jsonschema==4.23.0
-jsonschema-specifications==2023.12.1
 prometheus_client==0.20.0
-referencing==0.35.1
-rpds-py==0.19.0
+redmx==0.2.2
 setuptools==71.1.0
 wheel==0.43.0
