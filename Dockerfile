@@ -2,15 +2,16 @@ FROM python:3.12
 
 RUN useradd \
     --comment "Kafka Router" \
-    --home /home/kr \
+    --home /home/router \
     --no-log-init \
     --create-home \
     --shell /usr/sbin/nologin \
     --user-group \
-    kr
+    router \
+  && chmod 0700 /home/router
 
-USER kr
-WORKDIR /home/kr
-COPY --chown=kr:kr --chmod=0644 requirements.txt /home/kr/requirements.txt
+USER router
+WORKDIR /home/router
+COPY --chown=router:router --chmod=0644 requirements.txt /home/router/requirements.txt
 RUN pip install --no-cache-dir --user -r requirements.txt
-COPY --chown=kr:kr --chmod=0755 router.py /home/kr/router.py
+COPY --chown=router:router --chmod=0755 router.py /home/router/router.py

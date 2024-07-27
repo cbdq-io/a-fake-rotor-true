@@ -53,28 +53,41 @@ logger.debug(f'Log level has been set to "{log_level}".')
 
 RULE_SCHEMA = """
 {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "source_topic": {
-      "type": "string"
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "dependentSchemas": {
+        "header_jmespath": {
+            "required": [
+                "regexp"
+            ]
+        },
+        "jmespath": {
+            "required": [
+                "regexp"
+            ]
+        }
     },
-    "destination_topic": {
-      "type": "string"
+    "properties": {
+        "destination_topic": {
+            "type": "string"
+        },
+        "header_jmespath": {
+            "type": "string"
+        },
+        "jmespath": {
+            "type": "string"
+        },
+        "regexp": {
+            "type": "string"
+        },
+        "source_topic": {
+            "type": "string"
+        }
     },
-    "regexp": {
-      "type": "string"
-    },
-    "jmespath": {
-      "type": "string"
-    }
-  },
-  "required": [
-    "source_topic",
-    "destination_topic",
-    "regexp",
-    "jmespath"
-  ]
+    "required": [
+        "source_topic",
+        "destination_topic"
+    ],
+    "type": "object"
 }
 """
 
@@ -114,16 +127,9 @@ class EnvironmentConfig:
 
 
 class KafkaRouter:
-    """
-    A class for routing Kafka traffic to/from topics according to configurable rules.
+    """A class for routing Kafka traffic to/from topics according to configurable rule."""
 
-    Raises
-    ------
-    KafkaException
-        _description_
-    """
-
-    def __init__(self, DLQ_topic_name: str) -> None:
+    def __init__(self, DLQ_topic_name: str = None) -> None:
         env_config = EnvironmentConfig()
         self.consumer_conf = env_config.get_config('KAFKA_CONSUMER_')
         self.producer_conf = env_config.get_config('KAFKA_PRODUCER_')
@@ -226,5 +232,5 @@ class KafkaRouter:
 
 
 if __name__ == '__main__':
-    router = KafkaRouter(os.environ['KAFKA_ROUTER_DLQ_TOPIC_NAME'])
+    router = KafkaRouter(os.getenv('KAFKA_ROUTER_DLQ_TOPIC_NAME', None))
     router.router()

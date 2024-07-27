@@ -22,9 +22,15 @@ tag:
 	@python -c 'import router; print(router.__version__)'
 
 test:
-	LOG_LEVEL=DEBUG PYTHONPATH=.:.. pytest
 	docker compose up -d --wait
+	LOG_LEVEL=DEBUG PYTHONPATH=.:.. pytest
 
-update-requirements:
+trivy:
+	trivy image --severity HIGH,CRITICAL --ignore-unfixed flyte:latest
+
+update-pip-requirements:
 	pip freeze > /tmp/requirements.txt
 	comm -23 /tmp/requirements.txt ./requirements.txt > requirements-dev.txt
+
+update-trivy-ignore:
+	trivy image --format json --ignore-unfixed --severity HIGH,CRITICAL flyte:latest | jq -r '.Results[1].Vulnerabilities[].VulnerabilityID' | sort -u | tee .trivyignore

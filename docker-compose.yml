@@ -40,7 +40,7 @@ services:
 
   router:
     build: .
-    command: /home/kr/router.py
+    command: /home/router/router.py
     container_name: router
     depends_on:
       init:
