@@ -15,6 +15,8 @@
 
 ### Other
 
+* Fix; dev: Rename the CI workflow to Pipeline. [Ben Dalling]
+
 * Initial commit. [Ben Dalling]
 
 
