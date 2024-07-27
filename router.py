@@ -43,7 +43,7 @@ import sys
 
 from confluent_kafka import (Consumer, KafkaError, KafkaException, Message,
                              Producer)
-from prometheus_client import Info, Summary, start_http_server
+from prometheus_client import Counter, Info, Summary, start_http_server
 
 __version__ = '0.1.0'
 PROG = os.path.basename(sys.argv[0]).removesuffix('.py')
@@ -57,6 +57,12 @@ logger.debug(f'Log level has been set to "{log_level}".')
 PROCESS_TIME = Summary('processing_time_seconds', 'Time spent processing message.')
 VERSION_INFO = Info('run_version', 'The currently running version.')
 VERSION_INFO.info({'version': __version__})
+consumer_message_count = Counter('consumer_message_count', 'The count of messages consumed.')
+consumer_message_committed_count = Counter(
+    'consumer_message_committed_count',
+    'The count of messages consumed and committed.'
+)
+producer_message_count = Counter('producer_message_count', 'The count of messages produced.')
 
 
 class EnvironmentConfig:
@@ -129,9 +135,11 @@ class KafkaRouter:
                     logger.debug('Message is None.')
                     continue
 
+                consumer_message_count.inc()
                 self.process_message(msg, producer)
                 logger.debug('Committing the message in the consumer.')
                 consumer.commit(msg)
+                consumer_message_committed_count.inc()
         except SystemExit:
             logger.warning('SystemExit exception caught.')
         finally:
@@ -195,6 +203,7 @@ class KafkaRouter:
             producer.produce(output_topic, message.value())
             logger.debug('Flushing the producer.')
             producer.flush()
+            producer_message_count.inc()
 
 
 if __name__ == '__main__':

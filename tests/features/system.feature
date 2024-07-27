@@ -32,3 +32,15 @@ Feature: System Tests
         | confluent-kafka   |
         | prometheus_client |
         | redmx             |
+
+    Scenario Outline: System Test Outcomes
+        Given the TestInfra host with URL "docker://router" is ready
+        When the TestInfra command is "curl --fail http://localhost:8000"
+        Then the TestInfra command return code is 0
+        And the TestInfra command stdout contains "<expected_output>"
+
+        Examples:
+        | expected_output                            |
+        | consumer_message_count_total 3.0           |
+        | consumer_message_committed_count_total 3.0 |
+        | producer_message_count_total 3.0           |

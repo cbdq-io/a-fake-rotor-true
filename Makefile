@@ -2,7 +2,7 @@ all: clean lint build test
 
 build:
 	docker compose build router
-	docker compose run --rm router pip freeze > requirements.txt
+	docker compose run --no-deps --rm router pip freeze > requirements.txt
 
 changelog:
 	PYTHONPATH=. gitchangelog > CHANGELOG.md

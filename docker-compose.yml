@@ -46,9 +46,11 @@ services:
       init:
         condition: service_completed_successfully
     environment:
+      KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
       KAFKA_CONSUMER_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_CONSUMER_CLIENT_ID: kafka_router
       KAFKA_CONSUMER_ENABLE_AUTO_COMMIT: false
-      KAFKA_CONSUMER_GROUP_ID: kafka_router_container
+      KAFKA_CONSUMER_GROUP_ID: kafka_router_1
       KAFKA_PRODUCER_BOOTSTRAP_SERVERS: kafka:29092
       KAFKA_ROUTER_DLQ_TOPIC_NAME: 'router.dlq'
       LOG_LEVEL: DEBUG

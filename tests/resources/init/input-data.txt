@@ -1,1 +1,3 @@
 This is not valid JSON.
+{ "given_name": "John", "family_name": "Smith", "company_name": "John Smith & Associates" }
+{ "given_name": "John", "family_name": "Smith", "company_name": "John Smith & Associates", "vat_number": "WTF", "country": "WTF" }
