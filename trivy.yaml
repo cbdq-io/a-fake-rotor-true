@@ -1,0 +1,23 @@
+---
+# Config file for Trivy.
+exit-code: 1
+
+format: table
+
+ignore-unfixed: true
+
+severity:
+  - CRITICAL
+  - HIGH
+
+scanners:
+  - vuln
+
+vulnerability:
+  # Same as '--vuln-type'
+  # Default is 'os,library'
+  type:
+    - os
+    - library
+
+  ignore-unfixed: true

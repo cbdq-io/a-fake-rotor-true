@@ -1,17 +1,15 @@
 ---
 services:
   init:
-    command: bash -c "
-      kafka-topics --bootstrap-server kafka:29092 --list
-      && kafka-topics --bootstrap-server kafka:29092 --create --topic input_topic --if-not-exists
-      && kafka-topics --bootstrap-server kafka:29092 --create --topic output_topic --if-not-exists
-      && kafka-topics --bootstrap-server kafka:29092 --list
-      "
+    command: /bin/sh /mnt/data/init.sh
     container_name: init
     depends_on:
       kafka:
         condition: service_healthy
     image: confluentinc/cp-kafka:7.6.2
+    volumes:
+      - "./tests/resources/init:/mnt/data"
+
 
   kafka:
     container_name: kafka
@@ -39,8 +37,10 @@ services:
       - 9092:9092
 
   router:
-    build: .
-    command: /home/router/router.py
+    build:
+      context: .
+      tags:
+        - router:latest
     container_name: router
     depends_on:
       init:
@@ -52,3 +52,5 @@ services:
       KAFKA_PRODUCER_BOOTSTRAP_SERVERS: kafka:29092
       KAFKA_ROUTER_DLQ_TOPIC_NAME: 'router.dlq'
       LOG_LEVEL: DEBUG
+    ports:
+      - 8000:8000

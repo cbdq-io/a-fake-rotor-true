@@ -43,7 +43,9 @@ import sys
 
 from confluent_kafka import (Consumer, KafkaError, KafkaException, Message,
                              Producer)
+from prometheus_client import Info, Summary, start_http_server
 
+__version__ = '0.1.0'
 PROG = os.path.basename(sys.argv[0]).removesuffix('.py')
 logging.basicConfig()
 logger = logging.getLogger(PROG)
@@ -51,47 +53,10 @@ log_level = os.getenv('LOG_LEVEL', 'WARN')
 logger.setLevel(log_level)
 logger.debug(f'Log level has been set to "{log_level}".')
 
-RULE_SCHEMA = """
-{
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "dependentSchemas": {
-        "header_jmespath": {
-            "required": [
-                "regexp"
-            ]
-        },
-        "jmespath": {
-            "required": [
-                "regexp"
-            ]
-        }
-    },
-    "properties": {
-        "destination_topic": {
-            "type": "string"
-        },
-        "header_jmespath": {
-            "type": "string"
-        },
-        "jmespath": {
-            "type": "string"
-        },
-        "regexp": {
-            "type": "string"
-        },
-        "source_topic": {
-            "type": "string"
-        }
-    },
-    "required": [
-        "source_topic",
-        "destination_topic"
-    ],
-    "type": "object"
-}
-"""
-
-__version__ = '0.1.0'
+""" Prometheus Metrics. """
+PROCESS_TIME = Summary('processing_time_seconds', 'Time spent processing message.')
+VERSION_INFO = Info('run_version', 'The currently running version.')
+VERSION_INFO.info({'version': __version__})
 
 
 class EnvironmentConfig:
@@ -201,6 +166,7 @@ class KafkaRouter:
         if not is_valid:
             raise ValueError('The consumer must be configured with enable.auto.commit set to false.')
 
+    @PROCESS_TIME.time()
     def process_message(self, message: Message, producer: Producer):
         """
         Process a message that has been consumed from an input topic.
@@ -232,5 +198,6 @@ class KafkaRouter:
 
 
 if __name__ == '__main__':
+    start_http_server(int(os.getenv('KAFKA_ROUTER_PROMETHEUS_PORT', '8000')))
     router = KafkaRouter(os.getenv('KAFKA_ROUTER_DLQ_TOPIC_NAME', None))
     router.router()

@@ -26,11 +26,11 @@ test:
 	LOG_LEVEL=DEBUG PYTHONPATH=.:.. pytest
 
 trivy:
-	trivy image --severity HIGH,CRITICAL --ignore-unfixed flyte:latest
+	trivy image --severity HIGH,CRITICAL --ignore-unfixed router:latest
 
 update-pip-requirements:
 	pip freeze > /tmp/requirements.txt
 	comm -23 /tmp/requirements.txt ./requirements.txt > requirements-dev.txt
 
 update-trivy-ignore:
-	trivy image --format json --ignore-unfixed --severity HIGH,CRITICAL flyte:latest | jq -r '.Results[1].Vulnerabilities[].VulnerabilityID' | sort -u | tee .trivyignore
+	trivy image --format json --ignore-unfixed --severity HIGH,CRITICAL router:latest | jq -r '.Results[1].Vulnerabilities[].VulnerabilityID' | sort -u | tee .trivyignore
