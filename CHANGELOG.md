@@ -5,6 +5,8 @@
 
 ### New
 
+* Add Prometheus metrics. [Ben Dalling]
+
 * Add Trivy scan. [Ben Dalling]
 
 * Add a Docker Kafka broker as part of the test rig. [Ben Dalling]
