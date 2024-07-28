@@ -93,20 +93,56 @@ we're showing them as beutified JSON.
 Checks if the VAT number has a prefix of "IE".
 
 ```json
+{
+    "destination_topic": "IE.output",
+    "jmespath": "vat_number",
+    "regexp": "^IE",
+    "source_topic": "input"
+}
 ```
 
 ### KAFKA_ROUTER_RULE_COUNTRY_IS_GB
 
 ```json
+{
+    "destination_topic": "GB.output",
+    "jmespath": "country",
+    "regexp": "^GB$",
+    "source_topic": "input"
+}
 ```
 
 ### KAFKA_ROUTER_RULE_COUNTRY_IS_IE
 
 ```json
+{
+    "destination_topic": "IE.output",
+    "jmespath": "country",
+    "regexp": "^IE$",
+    "source_topic": "input"
+}
 ```
 
 ### KAFKA_ROUTER_RULE_COUNTRY_UK_VAT_NUMBER
 
 ```json
+{
+    "destination_topic": "GB.output",
+    "jmespath": "vat_number",
+    "regexp": "^GB",
+    "source_topic": "input"
+}
 ```
 
+## Outcomes
+
+In these examples, the DLQ topic has been set to `input.dlq`.
+
+| Message # | Destination Topic | Description                                                  |
+| --------- | ----------------- | ------------------------------------------------------------ |
+| 1         | input.dlq         | No country code or VAT number provided.                      |
+| 2         | input.dlq         | Country and VAT number provided, but neither match GB or IE. |
+| 3         | GB.output         | The VAT number has a prefix of GB.                           |
+| 4         | GB.output         | The country code is GB.                                      |
+| 5         | IE.output         | The VAT/CBL number has a prefix of IE.                       |
+| 6         | IE.output         | The country code is IE.                                      |
