@@ -30,7 +30,6 @@ pytest-coverage==0.0
 pytest-testinfra==10.1.1
 radon==6.0.1
 referencing==0.35.1
-rpds-py==0.19.0
 six==1.16.0
 snowballstemmer==2.2.0
 testinfra-bdd==3.0.5
