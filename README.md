@@ -40,7 +40,7 @@ Routing rules (of which at least one is required) have a prefix of
 on the name of the environment variable.  For more details on configuring
 rules, see [docs/rules.md](docs/rules.md) and an example configuration
 can be seen in the `router` service in
-`[docker-compose.yml](docker-compose.yml)`.
+`[docker-compose.yml](./docker-compose.yml)`.
 
 ### Other Configuration Items
 
