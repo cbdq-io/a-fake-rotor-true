@@ -16,7 +16,7 @@ services:
     environment:
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
       KAFKA_ADVERTISED_LISTENERS: 'INTERNAL://kafka:29092,EXTERNAL://localhost:9092'
-      KAFKA_AUTO_CREATE_TOPICS_ENABLED: false
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: false
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
       KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
@@ -53,7 +53,11 @@ services:
       KAFKA_CONSUMER_ENABLE_AUTO_COMMIT: false
       KAFKA_CONSUMER_GROUP_ID: kafka_router_1
       KAFKA_PRODUCER_BOOTSTRAP_SERVERS: kafka:29092
-      KAFKA_ROUTER_DLQ_TOPIC_NAME: 'router.dlq'
+      KAFKA_ROUTER_DLQ_TOPIC_NAME: 'input.dlq'
+      KAFKA_ROUTER_RULE_COUNTRY_IS_GB: '{"destination_topic":"GB.output","jmespath":"country","regexp":"^GB$","source_topic":"input"}'
+      KAFKA_ROUTER_RULE_COUNTRY_IS_IE: '{"destination_topic":"IE.output","jmespath":"country","regexp":"^IE$","source_topic":"input"}'
+      KAFKA_ROUTER_RULE_COUNTRY_UK_VAT_NUMBER: '{"destination_topic":"GB.output","jmespath":"vat_number","regexp":"^GB","source_topic":"input"}'
+      KAFKA_ROUTER_RULE_COUNTRY_IE_VAT_NUMBER: '{"destination_topic":"IE.output","jmespath":"vat_number","regexp":"^IE","source_topic":"input"}'
       LOG_LEVEL: DEBUG
     ports:
       - 8000:8000
