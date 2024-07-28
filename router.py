@@ -103,7 +103,16 @@ class EnvironmentConfig:
 
 
 class KafkaRouterRule:
-    """A rule for the Kafka router."""
+    """
+    A rule for the Kafka router.
+
+    Parameters
+    ----------
+    name : str
+        The name of the rule as found in the environment variables.
+    rule : str
+        The rule itself as a JSON string.
+    """
 
     def __init__(self, name: str, rule: str) -> None:
         logger.debug(f'Adding the {name} KafkaRouterRule "{rule}".')
@@ -188,7 +197,14 @@ class KafkaRouterRule:
 
 
 class KafkaRouter:
-    """A class for routing Kafka traffic to/from topics according to configurable rule."""
+    """
+    A class for routing Kafka traffic to/from topics according to configurable rule.
+
+    Parameters
+    ----------
+    DLQ_topic_name : str, optional
+        The name of the dead letter queue topic, by default None
+    """
 
     def __init__(self, DLQ_topic_name: str = None) -> None:
         env_config = EnvironmentConfig()
@@ -263,6 +279,7 @@ class KafkaRouter:
         consumer = Consumer(self.consumer_conf)
         producer = Producer(self.producer_conf)
         signal.signal(signal.SIGINT, self.handler)
+        signal.signal(signal.SIGTERM, self.handler)
 
         try:
             consumer.subscribe(self.source_topics)
