@@ -1,0 +1,6 @@
+{ "given_name": "John", "family_name": "Smith", "company_name": "John Smith & Associates" }
+{ "given_name": "John", "family_name": "Smith", "company_name": "John Smith & Associates", "vat_number": "WTF", "country": "WTF" }
+{ "given_name": "John", "family_name": "Smith", "company_name": "John Smith & Associates", "vat_number": "GB999 9999 73" }
+{ "given_name": "John", "family_name": "Smith", "company_name": "John Smith & Associates", "country": "GB" }
+{ "given_name": "Seána", "family_name": "Murphy", "company_name": "Seána Murphy & Associates", "vat_number": "IE1234567FA"}
+{ "given_name": "Seána", "family_name": "Murphy", "company_name": "Seána Murphy & Associates", "country": "IE"}

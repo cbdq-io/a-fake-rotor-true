@@ -1,0 +1,22 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "properties": {
+        "destination_topic": {
+            "type": "string"
+        },
+        "jmespath": {
+            "type": "string"
+        },
+        "regexp": {
+            "type": "string"
+        },
+        "source_topic": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "source_topic",
+        "destination_topic"
+    ],
+    "type": "object"
+}
