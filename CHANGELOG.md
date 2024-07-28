@@ -5,6 +5,10 @@
 
 ### New
 
+* Add non_routed_error_count to Prometheus metrics. [Ben Dalling]
+
+* Route Kafka topics based upon configurable rules. [Ben Dalling]
+
 * Add Prometheus metrics. [Ben Dalling]
 
 * Add Trivy scan. [Ben Dalling]
