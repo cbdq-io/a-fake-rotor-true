@@ -49,4 +49,5 @@ Feature: System Tests
         | expected_output                            |
         | consumer_message_count_total 6.0           |
         | consumer_message_committed_count_total 6.0 |
+        | non_routed_error_count                     |
         | producer_message_count_total 6.0           |

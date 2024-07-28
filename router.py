@@ -66,6 +66,7 @@ consumer_message_committed_count = Counter(
     'consumer_message_committed_count',
     'The count of messages consumed and committed.'
 )
+non_routed_error_count = Counter('non_routed_error_count', 'The count of messages that could not be routed.')
 producer_message_count = Counter('producer_message_count', 'The count of messages produced.')
 
 
@@ -241,8 +242,8 @@ class KafkaRouter:
 
         return rules
 
-    def handler(signum: int, frame):
-        """Catch fish."""
+    def handler(signum: int, frame) -> None:
+        """Catch signals."""
         signame = signal.Signals(signum).name
         logger.debug(f'frame is of type ({type(frame)}).')
         logger.warn(f'Caught signal {signame} ({signum}).')
@@ -294,10 +295,12 @@ class KafkaRouter:
             The message to be matched.
         """
         destination_topic = self.DLQ_topic_name
+        message_matched_to_rule = False
 
         for rule in self.rules:
             if rule.match_message(message):
                 destination_topic = rule.destination_topic
+                message_matched_to_rule = True
                 break
 
         if destination_topic:
@@ -308,7 +311,7 @@ class KafkaRouter:
             producer_message_count.inc()
             return
 
-        logger.warn('Consumed the message but not produced anywhere.')
+        self.report_message_matching_status(message_matched_to_rule)
 
     @PROCESS_TIME.time()
     def process_message(self, message: Message, producer: Producer):
@@ -334,6 +337,32 @@ class KafkaRouter:
         else:
             logger.debug(f'Consumed message from {message.topic()}: {message.value().decode("utf-8")}')
             self.match_message_to_rule(message, producer)
+
+    def report_message_matching_status(self, message_matched_to_rule: bool) -> None:
+        """
+        Report and set metrics for if the message was matched or not.
+
+        Yes, this could be an if statement in match_message_to_rule method,
+        but radon is at the limit of how complex that method is already.
+
+        Parameters
+        ----------
+        message_matched_to_rule : bool
+            True if the message was successfully matched to a routing rule,
+            False otherwise.
+        """
+        if message_matched_to_rule:
+            logger.debug('The message was successfully matched to a rule.')
+        else:
+            message = 'The message did not match any configured rules.  '
+
+            if self.DLQ_topic_name:
+                message += f'It has been sent to the {self.DLQ_topic_name} topic.'
+            else:
+                message += 'The message will no longer be processed.'
+
+            logger.warn(message)
+            non_routed_error_count.inc()
 
     def validate_consumer_config(self, config: dict) -> None:
         """
