@@ -15,6 +15,7 @@ USER router
 ENV KAFKA_ROUTER_PROMETHEUS_PORT=8000
 
 WORKDIR /home/router
+COPY --chown=router:router --chmod=0644 rule-schema.json /home/router/rule-schema.json
 COPY --chown=router:router --chmod=0644 requirements.txt /home/router/requirements.txt
 RUN pip install --no-cache-dir --user -r requirements.txt
 COPY --chown=router:router --chmod=0755 router.py /home/router/router.py

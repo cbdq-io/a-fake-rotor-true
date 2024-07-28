@@ -18,6 +18,9 @@ lint:
 	isort -v .
 	flake8
 
+non-system-tests:
+	LOG_LEVEL=DEBUG PYTHONPATH=.:.. pytest -m 'not system'
+
 tag:
 	@python -c 'import router; print(router.__version__)'
 

@@ -33,6 +33,15 @@ A similar method of configuration for the consumer, except using a prefix
 of `KAFKA_PRODUCER_`.  So `KAFKA_PRODUCER_BOOTSTRAP_SERVERS` will configure
 `bootstrap.servers` in the producer configuration.
 
+### Routing Rules
+
+Routing rules (of which at least one is required) have a prefix of
+`KAFKA_ROUTER_RULE_`.  These are added and processed alphabetically, sorted
+on the name of the environment variable.  For more details on configuring
+rules, see [docs/rules.md](docs/rules.md) and an example configuration
+can be seen in the `router` service in
+`[docker-compose.yml](docker-compose.yml)`.
+
 ### Other Configuration Items
 
 If no default is provided, the configuration item is mandatory.
@@ -42,3 +51,4 @@ If no default is provided, the configuration item is mandatory.
 | KAFKA_ROUTER_DLQ_TOPIC_NAME | "" | Will attempt to write messages that no rules apply to this topic.  If blank, the router warn no matches were found for the message and continue. |
 | KAFKA_ROUTER_PROMETHEUS_PORT | 8000 | The port for Prometheus metrics. |
 | LOG_LEVEL     | WARN    | Can be DEBUG, INFO, WARN or ERROR. |
+
