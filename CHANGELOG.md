@@ -5,6 +5,8 @@
 
 ### New
 
+* Add documentation about the rules configuration. [Ben Dalling]
+
 * Add non_routed_error_count to Prometheus metrics. [Ben Dalling]
 
 * Route Kafka topics based upon configurable rules. [Ben Dalling]
