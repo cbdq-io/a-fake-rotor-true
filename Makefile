@@ -22,7 +22,7 @@ non-system-tests:
 	LOG_LEVEL=DEBUG PYTHONPATH=.:.. pytest -m 'not system'
 
 tag:
-	@python -c 'import router; print(router.__version__)'
+	@grep ^__version__ router.py | cut -d\' -f 2
 
 test:
 	docker compose up -d --wait
