@@ -43,6 +43,7 @@ import re
 import signal
 import sys
 import traceback
+import types
 
 import jmespath
 import jsonschema
@@ -59,16 +60,16 @@ logger.setLevel(log_level)
 logger.debug(f'Log level has been set to "{log_level}".')
 
 """ Prometheus Metrics. """
-PROCESS_TIME = Summary('processing_time_seconds', 'Time spent processing message.')
-VERSION_INFO = Info('run_version', 'The currently running version.')
-VERSION_INFO.info({'version': __version__})
-consumer_message_count = Counter('consumer_message_count', 'The count of messages consumed.')
-consumer_message_committed_count = Counter(
-    'consumer_message_committed_count',
-    'The count of messages consumed and committed.'
-)
-non_routed_error_count = Counter('non_routed_error_count', 'The count of messages that could not be routed.')
-producer_message_count = Counter('producer_message_count', 'The count of messages produced.')
+kafka_prefix = os.getenv('KAFKA_ROUTER_PROMETHEUS_PREFIX', '')
+PROCESS_TIME = Summary(f'{kafka_prefix}processing_time_seconds', 'Time spent processing message.')
+VERSION_INFO = Info(f'{kafka_prefix}run_version', 'The currently running version.')
+VERSION_INFO.info({f'{kafka_prefix}version': __version__})
+consumer_message_count = Counter(f'{kafka_prefix}consumer_message_count', 'The count of messages consumed.')
+consumer_message_committed_count = Counter(f'{kafka_prefix}consumer_message_committed_count',
+                                           'The count of messages consumed and committed.')
+non_routed_error_count = Counter(f'{kafka_prefix}non_routed_error_count',
+                                 'The count of messages that could not be routed.')
+producer_message_count = Counter(f'{kafka_prefix}producer_message_count', 'The count of messages produced.')
 
 
 class EnvironmentConfig:
@@ -276,11 +277,10 @@ class KafkaRouter:
 
         return rules
 
-    def handler(signum: int, frame) -> None:
+    def handler(self, signum: int, frame: types.FrameType) -> None:
         """Catch signals."""
         signame = signal.Signals(signum).name
-        logger.debug(f'frame is of type ({type(frame)}).')
-        logger.warn(f'Caught signal {signame} ({signum}).')
+        logger.warning(f'Caught signal {signame} ({signum}).')
         sys.exit(0)
 
     def headers(self, headers: list = None) -> list:
@@ -340,9 +340,8 @@ class KafkaRouter:
             logger.debug('Flushing the producer.')
             producer.flush()
             producer_message_count.inc()
-            return
 
-        self.report_message_matching_status(message_matched_to_rule)
+        self.report_message_matching_status(destination_topic, message_matched_to_rule)
 
     @PROCESS_TIME.time()
     def process_message(self, message: Message, producer: Producer):
@@ -390,7 +389,7 @@ class KafkaRouter:
             self.upsert_header(f'__{self.get_dlq_id()}.offset', message.offset())
             self.upsert_header(f'__{self.get_dlq_id()}.message', 'Message not matched to any routing rules.')
 
-    def report_message_matching_status(self, message_matched_to_rule: bool) -> None:
+    def report_message_matching_status(self, destination_topic: str, message_matched_to_rule: bool) -> None:
         """
         Report and set metrics for if the message was matched or not.
 
@@ -399,11 +398,15 @@ class KafkaRouter:
 
         Parameters
         ----------
+        destination_topic: str
+            The name of the topic that the message is being routed to.
         message_matched_to_rule : bool
             True if the message was successfully matched to a routing rule,
             False otherwise.
         """
-        if message_matched_to_rule:
+        if message_matched_to_rule and destination_topic == self.DLQ_topic_name:
+            non_routed_error_count.inc()
+        elif message_matched_to_rule:
             logger.debug('The message was successfully matched to a rule.')
         else:
             message = 'The message did not match any configured rules.  '

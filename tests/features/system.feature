@@ -63,11 +63,11 @@ Feature: System Tests
         And the TestInfra command stdout contains "<expected_output>"
 
         Examples:
-        | expected_output                            |
-        | consumer_message_count_total 7.0           |
-        | consumer_message_committed_count_total 7.0 |
-        | non_routed_error_count                     |
-        | producer_message_count_total 7.0           |
+        | expected_output                                   |
+        | docker_consumer_message_count_total 7.0           |
+        | docker_consumer_message_committed_count_total 7.0 |
+        | docker_producer_message_count_total 7.0           |
+        | docker_non_routed_error_count_total 3.0           |
 
     Scenario Outline: Track Test Message Destinations
         Given a Kafka Consumer Config
@@ -86,3 +86,19 @@ Feature: System Tests
         | test        | TEST01D      | GB.output.json |
         | test        | TEST01E      | IE.output.json |
         | test        | TEST01F      | IE.output.json |
+
+    Scenario: Stop The Router Container
+        Given the TestInfra host with URL "local://" is ready
+        When the TestInfra command is "docker compose stop router"
+        Then the TestInfra command return code is 0
+
+    Scenario Outline: Ensure Graceful Shutdown of the Kafka Consumer
+        Given the TestInfra host with URL "local://" is ready
+        When the TestInfra command is "docker compose logs router"
+        Then the TestInfra command stdout contains "<expected_output>"
+
+        Examples:
+        | expected_output                             |
+        | WARNING:router:Caught signal SIGTERM (15).  |
+        | WARNING:router:SystemExit exception caught. |
+        | INFO:router:Closing the consumer.           |
