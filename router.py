@@ -59,16 +59,16 @@ logger.setLevel(log_level)
 logger.debug(f'Log level has been set to "{log_level}".')
 
 """ Prometheus Metrics. """
-PROCESS_TIME = Summary('processing_time_seconds', 'Time spent processing message.')
-VERSION_INFO = Info('run_version', 'The currently running version.')
-VERSION_INFO.info({'version': __version__})
-consumer_message_count = Counter('consumer_message_count', 'The count of messages consumed.')
-consumer_message_committed_count = Counter(
-    'consumer_message_committed_count',
-    'The count of messages consumed and committed.'
-)
-non_routed_error_count = Counter('non_routed_error_count', 'The count of messages that could not be routed.')
-producer_message_count = Counter('producer_message_count', 'The count of messages produced.')
+kafka_prefix = os.getenv('KAFKA_ROUTER_PROMETHEUS_PREFIX', '')
+PROCESS_TIME = Summary(f'{kafka_prefix}processing_time_seconds', 'Time spent processing message.')
+VERSION_INFO = Info(f'{kafka_prefix}run_version', 'The currently running version.')
+VERSION_INFO.info({f'{kafka_prefix}version': __version__})
+consumer_message_count = Counter(f'{kafka_prefix}consumer_message_count', 'The count of messages consumed.')
+consumer_message_committed_count = Counter(f'{kafka_prefix}consumer_message_committed_count',
+                                           'The count of messages consumed and committed.')
+non_routed_error_count = Counter(f'{kafka_prefix}non_routed_error_count',
+                                 'The count of messages that could not be routed.')
+producer_message_count = Counter(f'{kafka_prefix}producer_message_count', 'The count of messages produced.')
 
 
 class EnvironmentConfig:

@@ -63,11 +63,11 @@ Feature: System Tests
         And the TestInfra command stdout contains "<expected_output>"
 
         Examples:
-        | expected_output                            |
-        | consumer_message_count_total 7.0           |
-        | consumer_message_committed_count_total 7.0 |
-        | non_routed_error_count                     |
-        | producer_message_count_total 7.0           |
+        | expected_output                                   |
+        | docker_consumer_message_count_total 7.0           |
+        | docker_consumer_message_committed_count_total 7.0 |
+        | docker_producer_message_count_total 7.0           |
+        | docker_non_routed_error_count_total 3.0           |
 
     Scenario Outline: Track Test Message Destinations
         Given a Kafka Consumer Config

@@ -58,6 +58,7 @@ services:
       KAFKA_ROUTER_RULE_COUNTRY_IS_IE: '{"destination_topic":"IE.output.json","jmespath":"country","regexp":"^IE$","source_topic":"input.json"}'
       KAFKA_ROUTER_RULE_COUNTRY_UK_VAT_NUMBER: '{"destination_topic":"GB.output.json","jmespath":"vat_number","regexp":"^GB","source_topic":"input.json"}'
       KAFKA_ROUTER_RULE_COUNTRY_IE_VAT_NUMBER: '{"destination_topic":"IE.output.json","jmespath":"vat_number","regexp":"^IE","source_topic":"input.json"}'
+      KAFKA_ROUTER_PROMETHEUS_PREFIX: "docker_"
       LOG_LEVEL: DEBUG
     ports:
       - 8000:8000

@@ -51,6 +51,7 @@ If no default is provided, the configuration item is mandatory.
 | KAFKA_ROUTER_DLQ_ID | "" | If not provided will be set to KAFKA_CONSUMER_CLIENT_ID (if present) or KAFKA_CONSUMER_GROUP_ID. |
 | KAFKA_ROUTER_DLQ_TOPIC_NAME | "" | Will attempt to write messages that no rules apply to this topic.  If blank, the router warn no matches were found for the message and continue. |
 | KAFKA_ROUTER_PROMETHEUS_PORT | 8000 | The port for Prometheus metrics. |
+| KAFKA_ROUTER_PROMETHEUS_PREFIX | "" | A prefix name to add to the prometheus metrics (e.g. "dev_"). |
 | LOG_LEVEL     | WARN    | Can be DEBUG, INFO, WARN or ERROR. |
 
 ### Headers of Messages Placed on the DLQ Topic
