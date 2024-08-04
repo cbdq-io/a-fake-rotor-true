@@ -64,4 +64,4 @@ In this example we have set KAFKA_ROUTER_DLQ_ID to "router" and the headers will
 | __router.errors.partition | 1 | The partition number that the consumed message was on. |
 | __router.errors.offset | 8583 | The offset of the consumed consumed message within the partition. |
 | __router.errors.exception.message | No matching rules for message. | The exception message of why the message is on the DLQ. |
-| __router.errors.exception.stacktace | json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0) | Any stack trace (if available) associated with the exception. |
+| __router.errors.exception.stacktrace | json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0) | Any stack trace (if available) associated with the exception. |
