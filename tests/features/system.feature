@@ -67,3 +67,21 @@ Feature: System Tests
         | consumer_message_committed_count_total 6.0 |
         | non_routed_error_count                     |
         | producer_message_count_total 6.0           |
+
+    Scenario Outline: Track Test Message Destinations
+        Given a Kafka Consumer Config
+        And the Kafka Topic Name is <topic_name>
+        When the Kafka Consumer Config Setting bootstrap.servers is localhost:9092
+        And the Kafka Consumer Config Setting enable.auto.commit is false
+        And the Kafka Consumer Config Setting group.id is test_consumer
+        And the Kafka Consumer Config Setting auto.offset.reset is earliest
+        Then the Kafka Topic Contains a Message With a Header Called <header_name> Set to <header_value>
+
+        Examples:
+        | header_name | header_value | topic_name     |
+        | test        | TEST01A      | router.dlq     |
+        | test        | TEST01B      | router.dlq     |
+        | test        | TEST01C      | GB.output.json |
+        | test        | TEST01D      | GB.output.json |
+        | test        | TEST01E      | IE.output.json |
+        | test        | TEST01F      | IE.output.json |
