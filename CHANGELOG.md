@@ -9,6 +9,10 @@
 
 ### Fix
 
+* Ensure metrics for DLQ messages are recorded correctly. [Ben Dalling]
+
+* Allow Kafka metrics to be prefixed. [Ben Dalling]
+
 * We have correct headers on messages on the DLQ topic. Also ensure we handle deserialisation errors properly. [Ben Dalling]
 
 * Ensure input message headers and keys and replicated in output messages. [Ben Dalling]
