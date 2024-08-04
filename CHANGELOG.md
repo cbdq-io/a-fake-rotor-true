@@ -1,6 +1,19 @@
 # Changelog
 
 
+## 0.1.0
+
+### New
+
+* Documentation of DLQ message headers. [Ben Dalling]
+
+### Fix
+
+* We have correct headers on messages on the DLQ topic. Also ensure we handle deserialisation errors properly. [Ben Dalling]
+
+* Ensure input message headers and keys and replicated in output messages. [Ben Dalling]
+
+
 ## 0.1.0 (2024-07-28)
 
 ### New

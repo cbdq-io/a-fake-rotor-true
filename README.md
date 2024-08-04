@@ -48,7 +48,20 @@ If no default is provided, the configuration item is mandatory.
 
 | Configuration | Default | Notes |
 | ------------- | ------- | ----- |
+| KAFKA_ROUTER_DLQ_ID | "" | If not provided will be set to KAFKA_CONSUMER_CLIENT_ID (if present) or KAFKA_CONSUMER_GROUP_ID. |
 | KAFKA_ROUTER_DLQ_TOPIC_NAME | "" | Will attempt to write messages that no rules apply to this topic.  If blank, the router warn no matches were found for the message and continue. |
 | KAFKA_ROUTER_PROMETHEUS_PORT | 8000 | The port for Prometheus metrics. |
 | LOG_LEVEL     | WARN    | Can be DEBUG, INFO, WARN or ERROR. |
 
+### Headers of Messages Placed on the DLQ Topic
+
+If a message is placed upon the DLQ topic, we follow the example as set in
+[Confluent Cloud Dead Letter Queue](https://docs.confluent.io/cloud/current/connectors/dead-letter-queue.html).
+In this example we have set KAFKA_ROUTER_DLQ_ID to "router" and the headers will look something like this:
+
+| Key | Example Value | Description |
+| __router.errors.topic | input | The name of the topic tha the message was consumed from. |
+| __router.errors.partition | 1 | The partition number that the consumed message was on. |
+| __router.errors.offset | 8583 | The offset of the consumed consumed message within the partition. |
+| __router.errors.exception.message | No matching rules for message. | The exception message of why the message is on the DLQ. |
+| __router.errors.exception.stacktrace | json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0) | Any stack trace (if available) associated with the exception. |
