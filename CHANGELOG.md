@@ -9,6 +9,8 @@
 
 ### Fix
 
+* Ensure that the container catches signals correctly and shutsdown gracefully. [Ben Dalling]
+
 * Ensure metrics for DLQ messages are recorded correctly. [Ben Dalling]
 
 * Allow Kafka metrics to be prefixed. [Ben Dalling]
