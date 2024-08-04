@@ -1,6 +1,22 @@
 
 @system
 Feature: System Tests
+    Scenario Outline: Load Test Data
+        Given Kafka producer message value is <message_value>
+        And Kafka producer headers
+        When Kafka producer header <header_key> is <header_value>
+        Then Kafka producer should produce to <topic>
+
+        Examples:
+        | message_value                                                                                                                      | header_key | header_value | topic      |
+        | { "given_name": "John", "family_name": "Smith", "company_name": "John Smith & Associates" }                                        | test       | TEST01A      | input.json |
+        | { "given_name": "John", "family_name": "Smith", "company_name": "John Smith & Associates", "vat_number": "WTF", "country": "WTF" } | test       | TEST01B      | input.json |
+        | { "given_name": "John", "family_name": "Smith", "company_name": "John Smith & Associates", "vat_number": "GB999 9999 73" }         | test       | TEST01C      | input.json |
+        | { "given_name": "John", "family_name": "Smith", "company_name": "John Smith & Associates", "country": "GB" }                       | test       | TEST01D      | input.json |
+        | { "given_name": "Seána", "family_name": "Murphy", "company_name": "Seána Murphy & Associates", "vat_number": "IE1234567FA"}        | test       | TEST01E      | input.json |
+        | { "given_name": "Seána", "family_name": "Murphy", "company_name": "Seána Murphy & Associates", "country": "IE"}                    | test       | TEST01F      | input.json |
+
+
     Scenario: Verify the Container Build
         Given the TestInfra host with URL "docker://router" is ready
         When the TestInfra user is "router"
