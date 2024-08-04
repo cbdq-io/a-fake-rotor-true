@@ -9,6 +9,7 @@ changelog:
 
 clean:
 	docker compose down -t 0
+	find . -name __pycache__ -type d -exec rm -rf {} \; -depth
 
 cleanall: clean
 	docker system prune --all --force --volumes
