@@ -340,9 +340,8 @@ class KafkaRouter:
             logger.debug('Flushing the producer.')
             producer.flush()
             producer_message_count.inc()
-            return
 
-        self.report_message_matching_status(message_matched_to_rule)
+        self.report_message_matching_status(destination_topic, message_matched_to_rule)
 
     @PROCESS_TIME.time()
     def process_message(self, message: Message, producer: Producer):
@@ -390,7 +389,7 @@ class KafkaRouter:
             self.upsert_header(f'__{self.get_dlq_id()}.offset', message.offset())
             self.upsert_header(f'__{self.get_dlq_id()}.message', 'Message not matched to any routing rules.')
 
-    def report_message_matching_status(self, message_matched_to_rule: bool) -> None:
+    def report_message_matching_status(self, destination_topic: str, message_matched_to_rule: bool) -> None:
         """
         Report and set metrics for if the message was matched or not.
 
@@ -399,11 +398,15 @@ class KafkaRouter:
 
         Parameters
         ----------
+        destination_topic: str
+            The name of the topic that the message is being routed to.
         message_matched_to_rule : bool
             True if the message was successfully matched to a routing rule,
             False otherwise.
         """
-        if message_matched_to_rule:
+        if message_matched_to_rule and destination_topic == self.DLQ_topic_name:
+            non_routed_error_count.inc()
+        elif message_matched_to_rule:
             logger.debug('The message was successfully matched to a rule.')
         else:
             message = 'The message did not match any configured rules.  '
