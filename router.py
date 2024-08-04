@@ -43,6 +43,7 @@ import re
 import signal
 import sys
 import traceback
+import types
 
 import jmespath
 import jsonschema
@@ -276,11 +277,10 @@ class KafkaRouter:
 
         return rules
 
-    def handler(signum: int, frame) -> None:
+    def handler(self, signum: int, frame: types.FrameType) -> None:
         """Catch signals."""
         signame = signal.Signals(signum).name
-        logger.debug(f'frame is of type ({type(frame)}).')
-        logger.warn(f'Caught signal {signame} ({signum}).')
+        logger.warning(f'Caught signal {signame} ({signum}).')
         sys.exit(0)
 
     def headers(self, headers: list = None) -> list:

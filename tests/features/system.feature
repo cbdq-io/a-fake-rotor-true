@@ -86,3 +86,19 @@ Feature: System Tests
         | test        | TEST01D      | GB.output.json |
         | test        | TEST01E      | IE.output.json |
         | test        | TEST01F      | IE.output.json |
+
+    Scenario: Stop The Router Container
+        Given the TestInfra host with URL "local://" is ready
+        When the TestInfra command is "docker compose stop router"
+        Then the TestInfra command return code is 0
+
+    Scenario Outline: Ensure Graceful Shutdown of the Kafka Consumer
+        Given the TestInfra host with URL "local://" is ready
+        When the TestInfra command is "docker compose logs router"
+        Then the TestInfra command stdout contains "<expected_output>"
+
+        Examples:
+        | expected_output                             |
+        | WARNING:router:Caught signal SIGTERM (15).  |
+        | WARNING:router:SystemExit exception caught. |
+        | INFO:router:Closing the consumer.           |
