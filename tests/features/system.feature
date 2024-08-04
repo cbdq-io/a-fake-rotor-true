@@ -15,6 +15,7 @@ Feature: System Tests
         | { "given_name": "John", "family_name": "Smith", "company_name": "John Smith & Associates", "country": "GB" }                       | test       | TEST01D      | input.json |
         | { "given_name": "Seána", "family_name": "Murphy", "company_name": "Seána Murphy & Associates", "vat_number": "IE1234567FA"}        | test       | TEST01E      | input.json |
         | { "given_name": "Seána", "family_name": "Murphy", "company_name": "Seána Murphy & Associates", "country": "IE"}                    | test       | TEST01F      | input.json |
+        | Hello, world!                                                                                                                      | test       | TEST02A      | input.json |
 
 
     Scenario: Verify the Container Build
@@ -63,10 +64,10 @@ Feature: System Tests
 
         Examples:
         | expected_output                            |
-        | consumer_message_count_total 6.0           |
-        | consumer_message_committed_count_total 6.0 |
+        | consumer_message_count_total 7.0           |
+        | consumer_message_committed_count_total 7.0 |
         | non_routed_error_count                     |
-        | producer_message_count_total 6.0           |
+        | producer_message_count_total 7.0           |
 
     Scenario Outline: Track Test Message Destinations
         Given a Kafka Consumer Config

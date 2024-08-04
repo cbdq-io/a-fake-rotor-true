@@ -42,6 +42,7 @@ import os
 import re
 import signal
 import sys
+import traceback
 
 import jmespath
 import jsonschema
@@ -315,13 +316,25 @@ class KafkaRouter:
         self.headers(message.headers())
 
         for rule in self.rules:
-            if rule.match_message(message):
-                destination_topic = rule.destination_topic
+            try:
+                if rule.match_message(message):
+                    destination_topic = rule.destination_topic
+                    message_matched_to_rule = True
+                    break
+            except json.decoder.JSONDecodeError as ex:
+                destination_topic = self.DLQ_topic_name
+                self.upsert_header(f'__{self.get_dlq_id()}.topic', message.topic())
+                self.upsert_header(f'__{self.get_dlq_id()}.partition', message.partition())
+                self.upsert_header(f'__{self.get_dlq_id()}.offset', message.offset())
+                self.upsert_header(f'__{self.get_dlq_id()}.message', ex)
+                self.upsert_header(f'__{self.get_dlq_id()}.stacktrace', traceback.format_exc())
+
+                # Keep DLQ headers intact by saying we have matched the message.
                 message_matched_to_rule = True
-                break
 
         if destination_topic:
             logger.debug(f'Producing message onto the {destination_topic} topic.')
+            self.prepare_headers(message, destination_topic, message_matched_to_rule)
             producer.produce(destination_topic, message.value(), key=message.key(),
                              headers=self.headers())
             logger.debug('Flushing the producer.')
@@ -355,6 +368,27 @@ class KafkaRouter:
         else:
             logger.debug(f'Consumed message from {message.topic()}: {message.value().decode("utf-8")}')
             self.match_message_to_rule(message, producer)
+
+    def prepare_headers(self, message: Message, destination_topic: str, message_matched_to_rule: bool) -> None:
+        """
+        Prepare headers before producing a message.
+
+        Predominantly used to ensure that a message that has not been
+        matched to any rules and is destined for the DLQ topic has
+        headers explaining why.
+
+        Parameters
+        ----------
+        message : Message
+            The message to be produced.
+        message_matched_to_rule : bool
+            Was the message matched to any rule.
+        """
+        if destination_topic == self.DLQ_topic_name and not message_matched_to_rule:
+            self.upsert_header(f'__{self.get_dlq_id()}.topic', message.topic())
+            self.upsert_header(f'__{self.get_dlq_id()}.partition', message.partition())
+            self.upsert_header(f'__{self.get_dlq_id()}.offset', message.offset())
+            self.upsert_header(f'__{self.get_dlq_id()}.message', 'Message not matched to any routing rules.')
 
     def report_message_matching_status(self, message_matched_to_rule: bool) -> None:
         """
@@ -437,7 +471,7 @@ class KafkaRouter:
             if key != new_key:
                 new_headers.append((key, value))
 
-        new_headers.append((new_key, new_value))
+        new_headers.append((new_key, str(new_value)))
         self.headers(new_headers)
 
     def validate_consumer_config(self, config: dict) -> None:
