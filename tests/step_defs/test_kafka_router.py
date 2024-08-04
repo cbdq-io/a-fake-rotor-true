@@ -1,5 +1,6 @@
 """The KafkaRouter class. feature tests."""
 import json
+import os
 
 from pytest_bdd import given, parsers, scenario, then, when
 
@@ -9,6 +10,16 @@ from router import KafkaRouter, KafkaRouterRule
 @scenario('../features/kafka-router.feature', 'Check Adding Rules Affects Source Topics')
 def test_check_adding_rules_affects_source_topics():
     """Check Adding Rules Affects Source Topics."""
+
+
+@scenario('../features/kafka-router.feature', 'DLQ ID')
+def test_dlq_id():
+    """DLQ ID."""
+
+
+@scenario('../features/kafka-router.feature', 'Test Upsert Headers')
+def test_test_upsert_headers():
+    """Test Upsert Headers."""
 
 
 @scenario('../features/kafka-router.feature', 'Validate Consumer Config')
@@ -31,6 +42,16 @@ def _(config: str):
     return json.loads(config)
 
 
+@given('populated headers')
+def _(kafka_router: KafkaRouter):
+    """populated headers."""
+    kafka_router.headers(
+        [
+            ('a', 1)
+        ]
+    )
+
+
 @when(parsers.parse('rule {rule} is added to the KafkaRouter'))
 def _(rule: str, kafka_router: KafkaRouter):
     """rule <rule> is added to the KafkaRouter."""
@@ -43,6 +64,28 @@ def _(rule: str, kafka_router: KafkaRouter):
 def _():
     """the consumer config is validated."""
     pass
+
+
+@when(parsers.parse('OS environment {key} is {value}'))
+def _(key: str, value: str) -> None:
+    """OS environment KAFKA_CONSUMER_CLIENT_ID is <kafka_consumer_client_id>."""
+    if value == 'None' and key in os.environ:
+        del os.environ[key]
+    elif value != 'None':
+        os.environ[key] = value
+
+
+@when('new headers are appended')
+def _(kafka_router: KafkaRouter):
+    """new headers are appended."""
+    kafka_router.upsert_header('a', 2)
+    kafka_router.upsert_header('b', 3)
+
+
+@then(parsers.parse('DLQ ID is {expected_value}'))
+def _(expected_value: str, kafka_router: KafkaRouter):
+    """DLQ ID is <expected_value>."""
+    assert kafka_router.get_dlq_id() == expected_value
 
 
 @then(parsers.parse('KafkaRouter source topics include {source_topic}'))
@@ -64,3 +107,10 @@ def _(is_true: str, consumer_config: dict):
         actual = True
 
     assert actual == expected
+
+
+@then('headers count is two')
+def _(kafka_router: KafkaRouter):
+    """headers count is two."""
+    headers = kafka_router.headers()
+    assert len(headers) == 2

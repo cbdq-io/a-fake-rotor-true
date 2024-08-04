@@ -233,6 +233,23 @@ class KafkaRouter:
         if source_topic not in self.source_topics:
             self.source_topics.append(source_topic)
 
+    def get_dlq_id(self):
+        """
+        Get the ID for the DLQ headers.
+
+        Returns
+        -------
+        str
+            If KAFKA_ROUTER_DLQ_ID is provided. If not provided will be set
+            to KAFKA_CONSUMER_CLIENT_ID (if present) or KAFKA_CONSUMER_GROUP_ID.
+        """
+        if os.getenv('KAFKA_ROUTER_DLQ_ID', None):
+            return os.environ['KAFKA_ROUTER_DLQ_ID']
+        elif os.getenv('KAFKA_CONSUMER_CLIENT_ID', None):
+            return os.environ['KAFKA_CONSUMER_CLIENT_ID']
+
+        return os.environ['KAFKA_CONSUMER_GROUP_ID']
+
     def get_rules(self) -> None:
         """
         Get the rules from the environment variables.
@@ -265,42 +282,24 @@ class KafkaRouter:
         logger.warn(f'Caught signal {signame} ({signum}).')
         sys.exit(0)
 
-    def router(self) -> None:
+    def headers(self, headers: list = None) -> list:
         """
-        Consume from the consumer and produce to the producer.
+        Get or set the headers of the message being processed.
 
-        Exits if SIGINT is caught.
+        Parameters
+        ----------
+        headers : list, optional
+            If provided, a list of tuples to set as headers for the message, by default None
+
+        Returns
+        -------
+        list
+            A list of tuples that represent the headers of the message.
         """
-        if len(self.rules) == 0:
-            logger.error('There are no KafkaRouter rules defined.')
-            sys.exit(0)
+        if headers is not None:
+            self._headers = headers
 
-        self.validate_consumer_config(self.consumer_conf)
-        consumer = Consumer(self.consumer_conf)
-        producer = Producer(self.producer_conf)
-        signal.signal(signal.SIGINT, self.handler)
-        signal.signal(signal.SIGTERM, self.handler)
-
-        try:
-            consumer.subscribe(self.source_topics)
-
-            while True:
-                msg = consumer.poll(timeout=1.0)
-
-                if msg is None:
-                    logger.debug('Message is None.')
-                    continue
-
-                consumer_message_count.inc()
-                self.process_message(msg, producer)
-                logger.debug('Committing the message in the consumer.')
-                consumer.commit(msg)
-                consumer_message_committed_count.inc()
-        except SystemExit:
-            logger.warning('SystemExit exception caught.')
-        finally:
-            logger.info('Closing the consumer.')
-            consumer.close()
+        return self._headers
 
     def match_message_to_rule(self, message: Message, producer: Producer) -> None:
         """
@@ -313,6 +312,7 @@ class KafkaRouter:
         """
         destination_topic = self.DLQ_topic_name
         message_matched_to_rule = False
+        self.headers(message.headers())
 
         for rule in self.rules:
             if rule.match_message(message):
@@ -322,7 +322,8 @@ class KafkaRouter:
 
         if destination_topic:
             logger.debug(f'Producing message onto the {destination_topic} topic.')
-            producer.produce(destination_topic, message.value())
+            producer.produce(destination_topic, message.value(), key=message.key(),
+                             headers=self.headers())
             logger.debug('Flushing the producer.')
             producer.flush()
             producer_message_count.inc()
@@ -380,6 +381,64 @@ class KafkaRouter:
 
             logger.warn(message)
             non_routed_error_count.inc()
+
+    def router(self) -> None:
+        """
+        Consume from the consumer and produce to the producer.
+
+        Exits if SIGINT is caught.
+        """
+        if len(self.rules) == 0:
+            logger.error('There are no KafkaRouter rules defined.')
+            sys.exit(0)
+
+        self.validate_consumer_config(self.consumer_conf)
+        consumer = Consumer(self.consumer_conf)
+        producer = Producer(self.producer_conf)
+        signal.signal(signal.SIGINT, self.handler)
+        signal.signal(signal.SIGTERM, self.handler)
+
+        try:
+            consumer.subscribe(self.source_topics)
+
+            while True:
+                msg = consumer.poll(timeout=1.0)
+
+                if msg is None:
+                    logger.debug('Message is None.')
+                    continue
+
+                consumer_message_count.inc()
+                self.process_message(msg, producer)
+                logger.debug('Committing the message in the consumer.')
+                consumer.commit(msg)
+                consumer_message_committed_count.inc()
+        except SystemExit:
+            logger.warning('SystemExit exception caught.')
+        finally:
+            logger.info('Closing the consumer.')
+            consumer.close()
+
+    def upsert_header(self, new_key: str, new_value: str) -> None:
+        """
+        Update an existing header or insert a new one.
+
+        Parameters
+        ----------
+        new_key : str
+            The key value of the header.
+        new_value : str
+            The value of the header.
+        """
+        existing_headers = self.headers()
+        new_headers = []
+
+        for key, value in existing_headers:
+            if key != new_key:
+                new_headers.append((key, value))
+
+        new_headers.append((new_key, new_value))
+        self.headers(new_headers)
 
     def validate_consumer_config(self, config: dict) -> None:
         """
