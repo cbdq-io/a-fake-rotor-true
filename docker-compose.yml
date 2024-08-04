@@ -53,11 +53,12 @@ services:
       KAFKA_CONSUMER_ENABLE_AUTO_COMMIT: false
       KAFKA_CONSUMER_GROUP_ID: kafka_router_1
       KAFKA_PRODUCER_BOOTSTRAP_SERVERS: kafka:29092
-      KAFKA_ROUTER_DLQ_TOPIC_NAME: 'input.dlq'
-      KAFKA_ROUTER_RULE_COUNTRY_IS_GB: '{"destination_topic":"GB.output","jmespath":"country","regexp":"^GB$","source_topic":"input"}'
-      KAFKA_ROUTER_RULE_COUNTRY_IS_IE: '{"destination_topic":"IE.output","jmespath":"country","regexp":"^IE$","source_topic":"input"}'
-      KAFKA_ROUTER_RULE_COUNTRY_UK_VAT_NUMBER: '{"destination_topic":"GB.output","jmespath":"vat_number","regexp":"^GB","source_topic":"input"}'
-      KAFKA_ROUTER_RULE_COUNTRY_IE_VAT_NUMBER: '{"destination_topic":"IE.output","jmespath":"vat_number","regexp":"^IE","source_topic":"input"}'
+      KAFKA_ROUTER_DLQ_TOPIC_NAME: 'router.dlq'
+      KAFKA_ROUTER_RULE_COUNTRY_IS_GB: '{"destination_topic":"GB.output.json","jmespath":"country","regexp":"^GB$","source_topic":"input.json"}'
+      KAFKA_ROUTER_RULE_COUNTRY_IS_IE: '{"destination_topic":"IE.output.json","jmespath":"country","regexp":"^IE$","source_topic":"input.json"}'
+      KAFKA_ROUTER_RULE_COUNTRY_UK_VAT_NUMBER: '{"destination_topic":"GB.output.json","jmespath":"vat_number","regexp":"^GB","source_topic":"input.json"}'
+      KAFKA_ROUTER_RULE_COUNTRY_IE_VAT_NUMBER: '{"destination_topic":"IE.output.json","jmespath":"vat_number","regexp":"^IE","source_topic":"input.json"}'
+      KAFKA_ROUTER_PROMETHEUS_PREFIX: "docker_"
       LOG_LEVEL: DEBUG
     ports:
       - 8000:8000

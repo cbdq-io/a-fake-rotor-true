@@ -42,6 +42,8 @@ import os
 import re
 import signal
 import sys
+import traceback
+import types
 
 import jmespath
 import jsonschema
@@ -49,7 +51,7 @@ from confluent_kafka import (Consumer, KafkaError, KafkaException, Message,
                              Producer)
 from prometheus_client import Counter, Info, Summary, start_http_server
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 PROG = os.path.basename(sys.argv[0]).removesuffix('.py')
 logging.basicConfig()
 logger = logging.getLogger(PROG)
@@ -58,16 +60,16 @@ logger.setLevel(log_level)
 logger.debug(f'Log level has been set to "{log_level}".')
 
 """ Prometheus Metrics. """
-PROCESS_TIME = Summary('processing_time_seconds', 'Time spent processing message.')
-VERSION_INFO = Info('run_version', 'The currently running version.')
-VERSION_INFO.info({'version': __version__})
-consumer_message_count = Counter('consumer_message_count', 'The count of messages consumed.')
-consumer_message_committed_count = Counter(
-    'consumer_message_committed_count',
-    'The count of messages consumed and committed.'
-)
-non_routed_error_count = Counter('non_routed_error_count', 'The count of messages that could not be routed.')
-producer_message_count = Counter('producer_message_count', 'The count of messages produced.')
+kafka_prefix = os.getenv('KAFKA_ROUTER_PROMETHEUS_PREFIX', '')
+PROCESS_TIME = Summary(f'{kafka_prefix}processing_time_seconds', 'Time spent processing message.')
+VERSION_INFO = Info(f'{kafka_prefix}run_version', 'The currently running version.')
+VERSION_INFO.info({f'{kafka_prefix}version': __version__})
+consumer_message_count = Counter(f'{kafka_prefix}consumer_message_count', 'The count of messages consumed.')
+consumer_message_committed_count = Counter(f'{kafka_prefix}consumer_message_committed_count',
+                                           'The count of messages consumed and committed.')
+non_routed_error_count = Counter(f'{kafka_prefix}non_routed_error_count',
+                                 'The count of messages that could not be routed.')
+producer_message_count = Counter(f'{kafka_prefix}producer_message_count', 'The count of messages produced.')
 
 
 class EnvironmentConfig:
@@ -233,6 +235,23 @@ class KafkaRouter:
         if source_topic not in self.source_topics:
             self.source_topics.append(source_topic)
 
+    def get_dlq_id(self):
+        """
+        Get the ID for the DLQ headers.
+
+        Returns
+        -------
+        str
+            If KAFKA_ROUTER_DLQ_ID is provided. If not provided will be set
+            to KAFKA_CONSUMER_CLIENT_ID (if present) or KAFKA_CONSUMER_GROUP_ID.
+        """
+        if os.getenv('KAFKA_ROUTER_DLQ_ID', None):
+            return os.environ['KAFKA_ROUTER_DLQ_ID']
+        elif os.getenv('KAFKA_CONSUMER_CLIENT_ID', None):
+            return os.environ['KAFKA_CONSUMER_CLIENT_ID']
+
+        return os.environ['KAFKA_CONSUMER_GROUP_ID']
+
     def get_rules(self) -> None:
         """
         Get the rules from the environment variables.
@@ -258,12 +277,147 @@ class KafkaRouter:
 
         return rules
 
-    def handler(signum: int, frame) -> None:
+    def handler(self, signum: int, frame: types.FrameType) -> None:
         """Catch signals."""
         signame = signal.Signals(signum).name
-        logger.debug(f'frame is of type ({type(frame)}).')
-        logger.warn(f'Caught signal {signame} ({signum}).')
+        logger.warning(f'Caught signal {signame} ({signum}).')
         sys.exit(0)
+
+    def headers(self, headers: list = None) -> list:
+        """
+        Get or set the headers of the message being processed.
+
+        Parameters
+        ----------
+        headers : list, optional
+            If provided, a list of tuples to set as headers for the message, by default None
+
+        Returns
+        -------
+        list
+            A list of tuples that represent the headers of the message.
+        """
+        if headers is not None:
+            self._headers = headers
+
+        return self._headers
+
+    def match_message_to_rule(self, message: Message, producer: Producer) -> None:
+        """
+        Match the given message to the configured rules.
+
+        Parameters
+        ----------
+        message : Message
+            The message to be matched.
+        """
+        destination_topic = self.DLQ_topic_name
+        message_matched_to_rule = False
+        self.headers(message.headers())
+
+        for rule in self.rules:
+            try:
+                if rule.match_message(message):
+                    destination_topic = rule.destination_topic
+                    message_matched_to_rule = True
+                    break
+            except json.decoder.JSONDecodeError as ex:
+                destination_topic = self.DLQ_topic_name
+                self.upsert_header(f'__{self.get_dlq_id()}.topic', message.topic())
+                self.upsert_header(f'__{self.get_dlq_id()}.partition', message.partition())
+                self.upsert_header(f'__{self.get_dlq_id()}.offset', message.offset())
+                self.upsert_header(f'__{self.get_dlq_id()}.message', ex)
+                self.upsert_header(f'__{self.get_dlq_id()}.stacktrace', traceback.format_exc())
+
+                # Keep DLQ headers intact by saying we have matched the message.
+                message_matched_to_rule = True
+
+        if destination_topic:
+            logger.debug(f'Producing message onto the {destination_topic} topic.')
+            self.prepare_headers(message, destination_topic, message_matched_to_rule)
+            producer.produce(destination_topic, message.value(), key=message.key(),
+                             headers=self.headers())
+            logger.debug('Flushing the producer.')
+            producer.flush()
+            producer_message_count.inc()
+
+        self.report_message_matching_status(destination_topic, message_matched_to_rule)
+
+    @PROCESS_TIME.time()
+    def process_message(self, message: Message, producer: Producer):
+        """
+        Process a message that has been consumed from an input topic.
+
+        Parameters
+        ----------
+        message : Message
+            The consumed message to be processed.
+        producer : confluent_kafka.Producer
+
+        Raises
+        ------
+        KafkaError
+            If an error occurred in the consumer.
+        """
+        if message.error():
+            if message.error().code() == KafkaError._PARTITION_EOF:
+                logger.debug('End of partition reached {0}/{1}'.format(message.topic(), message.partition()))
+            else:
+                raise KafkaException(message.error())
+        else:
+            logger.debug(f'Consumed message from {message.topic()}: {message.value().decode("utf-8")}')
+            self.match_message_to_rule(message, producer)
+
+    def prepare_headers(self, message: Message, destination_topic: str, message_matched_to_rule: bool) -> None:
+        """
+        Prepare headers before producing a message.
+
+        Predominantly used to ensure that a message that has not been
+        matched to any rules and is destined for the DLQ topic has
+        headers explaining why.
+
+        Parameters
+        ----------
+        message : Message
+            The message to be produced.
+        message_matched_to_rule : bool
+            Was the message matched to any rule.
+        """
+        if destination_topic == self.DLQ_topic_name and not message_matched_to_rule:
+            self.upsert_header(f'__{self.get_dlq_id()}.topic', message.topic())
+            self.upsert_header(f'__{self.get_dlq_id()}.partition', message.partition())
+            self.upsert_header(f'__{self.get_dlq_id()}.offset', message.offset())
+            self.upsert_header(f'__{self.get_dlq_id()}.message', 'Message not matched to any routing rules.')
+
+    def report_message_matching_status(self, destination_topic: str, message_matched_to_rule: bool) -> None:
+        """
+        Report and set metrics for if the message was matched or not.
+
+        Yes, this could be an if statement in match_message_to_rule method,
+        but radon is at the limit of how complex that method is already.
+
+        Parameters
+        ----------
+        destination_topic: str
+            The name of the topic that the message is being routed to.
+        message_matched_to_rule : bool
+            True if the message was successfully matched to a routing rule,
+            False otherwise.
+        """
+        if message_matched_to_rule and destination_topic == self.DLQ_topic_name:
+            non_routed_error_count.inc()
+        elif message_matched_to_rule:
+            logger.debug('The message was successfully matched to a rule.')
+        else:
+            message = 'The message did not match any configured rules.  '
+
+            if self.DLQ_topic_name:
+                message += f'It has been sent to the {self.DLQ_topic_name} topic.'
+            else:
+                message += 'The message will no longer be processed.'
+
+            logger.warn(message)
+            non_routed_error_count.inc()
 
     def router(self) -> None:
         """
@@ -302,84 +456,26 @@ class KafkaRouter:
             logger.info('Closing the consumer.')
             consumer.close()
 
-    def match_message_to_rule(self, message: Message, producer: Producer) -> None:
+    def upsert_header(self, new_key: str, new_value: str) -> None:
         """
-        Match the given message to the configured rules.
+        Update an existing header or insert a new one.
 
         Parameters
         ----------
-        message : Message
-            The message to be matched.
+        new_key : str
+            The key value of the header.
+        new_value : str
+            The value of the header.
         """
-        destination_topic = self.DLQ_topic_name
-        message_matched_to_rule = False
+        existing_headers = self.headers()
+        new_headers = []
 
-        for rule in self.rules:
-            if rule.match_message(message):
-                destination_topic = rule.destination_topic
-                message_matched_to_rule = True
-                break
+        for key, value in existing_headers:
+            if key != new_key:
+                new_headers.append((key, value))
 
-        if destination_topic:
-            logger.debug(f'Producing message onto the {destination_topic} topic.')
-            producer.produce(destination_topic, message.value())
-            logger.debug('Flushing the producer.')
-            producer.flush()
-            producer_message_count.inc()
-            return
-
-        self.report_message_matching_status(message_matched_to_rule)
-
-    @PROCESS_TIME.time()
-    def process_message(self, message: Message, producer: Producer):
-        """
-        Process a message that has been consumed from an input topic.
-
-        Parameters
-        ----------
-        message : Message
-            The consumed message to be processed.
-        producer : confluent_kafka.Producer
-
-        Raises
-        ------
-        KafkaError
-            If an error occurred in the consumer.
-        """
-        if message.error():
-            if message.error().code() == KafkaError._PARTITION_EOF:
-                logger.debug('End of partition reached {0}/{1}'.format(message.topic(), message.partition()))
-            else:
-                raise KafkaException(message.error())
-        else:
-            logger.debug(f'Consumed message from {message.topic()}: {message.value().decode("utf-8")}')
-            self.match_message_to_rule(message, producer)
-
-    def report_message_matching_status(self, message_matched_to_rule: bool) -> None:
-        """
-        Report and set metrics for if the message was matched or not.
-
-        Yes, this could be an if statement in match_message_to_rule method,
-        but radon is at the limit of how complex that method is already.
-
-        Parameters
-        ----------
-        message_matched_to_rule : bool
-            True if the message was successfully matched to a routing rule,
-            False otherwise.
-        """
-        if message_matched_to_rule:
-            logger.debug('The message was successfully matched to a rule.')
-        else:
-            message = 'The message did not match any configured rules.  '
-
-            if self.DLQ_topic_name:
-                message += f'It has been sent to the {self.DLQ_topic_name} topic.'
-            else:
-                message += 'The message will no longer be processed.'
-
-            logger.warn(message)
-            non_routed_error_count.inc()
+        new_headers.append((new_key, str(new_value)))
+        self.headers(new_headers)
 
     def validate_consumer_config(self, config: dict) -> None:
         """
