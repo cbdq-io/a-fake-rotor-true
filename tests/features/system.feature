@@ -64,10 +64,10 @@ Feature: System Tests
 
         Examples:
         | expected_output                                   |
-        | docker_consumer_message_count_total 7.0           |
-        | docker_consumer_message_committed_count_total 7.0 |
-        | docker_producer_message_count_total 7.0           |
-        | docker_non_routed_error_count_total 3.0           |
+        | docker_consumer_message_count_total 8.0           |
+        | docker_consumer_message_committed_count_total 8.0 |
+        | docker_producer_message_count_total 8.0           |
+        | docker_non_routed_error_count_total 4.0           |
 
     Scenario Outline: Track Test Message Destinations
         Given a Kafka Consumer Config
