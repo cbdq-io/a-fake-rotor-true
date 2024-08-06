@@ -15,6 +15,9 @@ Feature: Kafka Router Rule
         | { "given_name": "John", "family_name": "Smith", "company_name": "John Smith & Associates" }                  | {"destination_topic":"GB.output","jmespath":"country","regexp":"^GB$","source_topic":"input"} | False            |
         | { "given_name": "John", "family_name": "Smith", "company_name": "John Smith & Associates", "country": "GB" } | {"destination_topic":"GB.output","jmespath":"country","regexp":"^GB$","source_topic":"input"} | True             |
         | { "given_name": "John", "family_name": "Smith", "company_name": "John Smith & Associates", "country": "GB" } | {"destination_topic":"GB.output","jmespath":"country","source_topic":"input"}                 | True             |
+        | Country: England                                                                                             | {"destination_topic":"GB.output","regexp":"Scotland","source_topic":"input"}                  | False            |
+        | Country: Scotland                                                                                            | {"destination_topic":"GB.output","regexp":"Scotland","source_topic":"input"}                  | True             |
+        | Hello, world!                                                                                                | {"destination_topic":"GB.output","source_topic":"input"}                                      | True             |
 
     Scenario Outline: Rule Exceptions
         Given an Invalid Kafka Router Rule of <rule>
