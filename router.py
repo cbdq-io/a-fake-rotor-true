@@ -207,6 +207,7 @@ class KafkaRouter:
 
     def __init__(self, DLQ_topic_name: str = None) -> None:
         env_config = EnvironmentConfig()
+        self._headers = []
         self.consumer_conf = env_config.get_config('KAFKA_CONSUMER_')
         self.producer_conf = env_config.get_config('KAFKA_PRODUCER_')
         self.DLQ_topic_name = DLQ_topic_name
