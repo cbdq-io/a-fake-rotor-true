@@ -1,7 +1,14 @@
 # Changelog
 
 
-## 0.1.1
+## 0.1.2
+
+### Fix
+
+* Stop the router crashing a message has no headers. [Ben Dalling]
+
+
+## 0.1.1 (2024-08-04)
 
 ### New
 

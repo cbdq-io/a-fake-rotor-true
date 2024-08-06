@@ -28,6 +28,7 @@ Feature: The KafkaRouter class.
         When OS environment KAFKA_ROUTER_DLQ_ID is <kafka_router_dlq_id>
         And OS environment KAFKA_CONSUMER_CLIENT_ID is <kafka_consumer_client_id>
         And OS environment KAFKA_CONSUMER_GROUP_ID is <kafka_consumer_group_id>
+        And OS environment KAFKA_ROUTER_RULE_1 is {"destination_topic":"output","source_topic":"input"}
         Then DLQ ID is <expected_value>
 
         Examples:
@@ -37,7 +38,18 @@ Feature: The KafkaRouter class.
             | None      | None                | None                     | c                       | c              |
 
     Scenario: Test Upsert Headers
-        Given  a KafkaRouter with DLQ topic None
+        Given a KafkaRouter with DLQ topic None
         And populated headers
         When new headers are appended
         Then headers count is two
+
+    Scenario Outline: Test Signal Handler
+        Given a KafkaRouter with DLQ topic None
+        And System Signal is <signal>
+        When System Signal is sent
+        Then KafkaRouter handler catches it
+
+        Examples:
+            | signal  |
+            | SIGINT  |
+            | SIGTERM |

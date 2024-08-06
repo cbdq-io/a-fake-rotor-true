@@ -51,7 +51,7 @@ from confluent_kafka import (Consumer, KafkaError, KafkaException, Message,
                              Producer)
 from prometheus_client import Counter, Info, Summary, start_http_server
 
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 PROG = os.path.basename(sys.argv[0]).removesuffix('.py')
 logging.basicConfig()
 logger = logging.getLogger(PROG)
@@ -158,15 +158,12 @@ class KafkaRouterRule:
         """
         raw_message = message.value().decode('utf-8')
 
-        if self.regexp and not self.jmespath:
-            return raw_message
-
         if self.jmespath:
             data = json.loads(raw_message)
             logger.debug(f'JMESPath is looking for "{self.jmespath}" in "{data}".')
             return jmespath.search(self.jmespath, data)
 
-        return None
+        return raw_message
 
     def match_message(self, message: Message) -> bool:
         """
@@ -210,12 +207,15 @@ class KafkaRouter:
 
     def __init__(self, DLQ_topic_name: str = None) -> None:
         env_config = EnvironmentConfig()
+        self._headers = []
         self.consumer_conf = env_config.get_config('KAFKA_CONSUMER_')
         self.producer_conf = env_config.get_config('KAFKA_PRODUCER_')
         self.DLQ_topic_name = DLQ_topic_name
         self.source_topics = []
         self.rules = []
         self.get_rules()
+        signal.signal(signal.SIGINT, self.handler)
+        signal.signal(signal.SIGTERM, self.handler)
 
     def add_rule(self, rule: KafkaRouterRule) -> None:
         """
@@ -432,8 +432,6 @@ class KafkaRouter:
         self.validate_consumer_config(self.consumer_conf)
         consumer = Consumer(self.consumer_conf)
         producer = Producer(self.producer_conf)
-        signal.signal(signal.SIGINT, self.handler)
-        signal.signal(signal.SIGTERM, self.handler)
 
         try:
             consumer.subscribe(self.source_topics)
