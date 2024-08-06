@@ -158,15 +158,12 @@ class KafkaRouterRule:
         """
         raw_message = message.value().decode('utf-8')
 
-        if self.regexp and not self.jmespath:
-            return raw_message
-
         if self.jmespath:
             data = json.loads(raw_message)
             logger.debug(f'JMESPath is looking for "{self.jmespath}" in "{data}".')
             return jmespath.search(self.jmespath, data)
 
-        return None
+        return raw_message
 
     def match_message(self, message: Message) -> bool:
         """
@@ -216,6 +213,8 @@ class KafkaRouter:
         self.source_topics = []
         self.rules = []
         self.get_rules()
+        signal.signal(signal.SIGINT, self.handler)
+        signal.signal(signal.SIGTERM, self.handler)
 
     def add_rule(self, rule: KafkaRouterRule) -> None:
         """
@@ -432,8 +431,6 @@ class KafkaRouter:
         self.validate_consumer_config(self.consumer_conf)
         consumer = Consumer(self.consumer_conf)
         producer = Producer(self.producer_conf)
-        signal.signal(signal.SIGINT, self.handler)
-        signal.signal(signal.SIGTERM, self.handler)
 
         try:
             consumer.subscribe(self.source_topics)

@@ -1,30 +1,14 @@
 """The KafkaRouter class. feature tests."""
 import json
 import os
+import signal
 
-from pytest_bdd import given, parsers, scenario, then, when
+import pytest
+from pytest_bdd import given, parsers, scenarios, then, when
 
 from router import KafkaRouter, KafkaRouterRule
 
-
-@scenario('../features/kafka-router.feature', 'Check Adding Rules Affects Source Topics')
-def test_check_adding_rules_affects_source_topics():
-    """Check Adding Rules Affects Source Topics."""
-
-
-@scenario('../features/kafka-router.feature', 'DLQ ID')
-def test_dlq_id():
-    """DLQ ID."""
-
-
-@scenario('../features/kafka-router.feature', 'Test Upsert Headers')
-def test_test_upsert_headers():
-    """Test Upsert Headers."""
-
-
-@scenario('../features/kafka-router.feature', 'Validate Consumer Config')
-def test_validate_consumer_config():
-    """Validate Consumer Config."""
+scenarios('../features/kafka-router.feature')
 
 
 @given(parsers.parse('a KafkaRouter with DLQ topic {dlq_topic}'), target_fixture='kafka_router')
@@ -50,6 +34,23 @@ def _(kafka_router: KafkaRouter):
             ('a', 1)
         ]
     )
+
+
+@given(parsers.parse('System Signal is {signal_name}'), target_fixture='system_signal')
+def _(signal_name: str):
+    """System Signal is <signal>."""
+    signal_map = {
+        'SIGINT': signal.SIGINT,
+        'SIGTERM': signal.SIGTERM
+    }
+
+    return signal_map[signal_name]
+
+
+@when('System Signal is sent')
+def _():
+    """System Signal is sent."""
+    pass
 
 
 @when(parsers.parse('rule {rule} is added to the KafkaRouter'))
@@ -114,3 +115,12 @@ def _(kafka_router: KafkaRouter):
     """headers count is two."""
     headers = kafka_router.headers()
     assert len(headers) == 2
+
+
+@then('KafkaRouter handler catches it')
+def _(system_signal: int):
+    """KafkaRouter handler catches it."""
+    with pytest.raises(SystemExit) as exit_info:
+        signal.raise_signal(system_signal)
+
+    assert exit_info.value.code == 0
