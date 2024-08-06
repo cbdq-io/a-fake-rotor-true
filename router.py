@@ -42,6 +42,7 @@ import os
 import re
 import signal
 import sys
+import time
 import traceback
 import types
 
@@ -216,6 +217,17 @@ class KafkaRouter:
         self.get_rules()
         signal.signal(signal.SIGINT, self.handler)
         signal.signal(signal.SIGTERM, self.handler)
+        self.running(True)
+        self.dlq_mode(os.getenv('KAFKA_ROUTER_DLQ_MODE', 'False') == 'True')
+        self.dry_run_mode(os.getenv('KAFKA_ROUTER_DRY_RUN_MODE', 'False') == 'True')
+
+        if self.dlq_mode():
+            self.timeout_ms = int(os.getenv('KAFKA_ROUTER_TIMEOUT_MS', '500'))
+        else:
+            self.timeout_ms = 0
+
+        self.consumer = None
+        self.producer = None
 
     def add_rule(self, rule: KafkaRouterRule) -> None:
         """
@@ -234,6 +246,80 @@ class KafkaRouter:
 
         if source_topic not in self.source_topics:
             self.source_topics.append(source_topic)
+
+    def check_for_timeout(self, time_of_last_message: int) -> None:
+        """
+        Check if we have exceeded the timeout_ms.
+
+        Only does anything significant is DLQ mode is enabled.
+
+        Parameters
+        ----------
+        time_of_last_message : int
+            The timestamp (in ms) of when the last message was processed.
+        """
+        if not self.dlq_mode():
+            logger.debug('DLQ Mode is disabled.')
+            return
+
+        time_now = time.time() * 1000
+
+        if time_now - time_of_last_message >= self.timeout_ms:
+            logger.warning(f'Timeout ({self.timeout_ms}ms) since last message consumed.')
+            self.running(False)
+
+    def commit(self, message: Message) -> None:
+        """
+        Commit the consumer unless DLQ mode is enabled.
+
+        Parameters
+        ----------
+        message : Message
+            The message to be committed.
+        """
+        if not self.dlq_mode():
+            self.consumer.commit(message)
+            consumer_message_committed_count.inc()
+
+    def dlq_mode(self, dlq_mode: bool = None) -> bool:
+        """
+        Get or set the DLQ mode.
+
+        Parameters
+        ----------
+        dlq_mode : bool, optional
+            Set the DLQ mode, by default None
+
+        Returns
+        -------
+        bool
+            Get the DLQ mode.
+        """
+        if dlq_mode is not None:
+            self._dlq_mode = dlq_mode
+
+        return self._dlq_mode
+
+    def dry_run_mode(self, dry_run_mode: bool = None) -> bool:
+        """
+        Get or set dry run mode.
+
+        When set to true, no messages are produced.
+
+        Parameters
+        ----------
+        dry_run_mode : bool, optional
+            Set the dry-run mode, by default None
+
+        Returns
+        -------
+        bool
+            Get dry-run mode.
+        """
+        if dry_run_mode is not None:
+            self._dry_run_mode = dry_run_mode
+
+        return self._dry_run_mode
 
     def get_dlq_id(self):
         """
@@ -302,7 +388,7 @@ class KafkaRouter:
 
         return self._headers
 
-    def match_message_to_rule(self, message: Message, producer: Producer) -> None:
+    def match_message_to_rule(self, message: Message) -> None:
         """
         Match the given message to the configured rules.
 
@@ -335,38 +421,9 @@ class KafkaRouter:
         if destination_topic:
             logger.debug(f'Producing message onto the {destination_topic} topic.')
             self.prepare_headers(message, destination_topic, message_matched_to_rule)
-            producer.produce(destination_topic, message.value(), key=message.key(),
-                             headers=self.headers())
-            logger.debug('Flushing the producer.')
-            producer.flush()
-            producer_message_count.inc()
+            self.produce(destination_topic, message.value(), message.key(), self.headers())
 
         self.report_message_matching_status(destination_topic, message_matched_to_rule)
-
-    @PROCESS_TIME.time()
-    def process_message(self, message: Message, producer: Producer):
-        """
-        Process a message that has been consumed from an input topic.
-
-        Parameters
-        ----------
-        message : Message
-            The consumed message to be processed.
-        producer : confluent_kafka.Producer
-
-        Raises
-        ------
-        KafkaError
-            If an error occurred in the consumer.
-        """
-        if message.error():
-            if message.error().code() == KafkaError._PARTITION_EOF:
-                logger.debug('End of partition reached {0}/{1}'.format(message.topic(), message.partition()))
-            else:
-                raise KafkaException(message.error())
-        else:
-            logger.debug(f'Consumed message from {message.topic()}: {message.value().decode("utf-8")}')
-            self.match_message_to_rule(message, producer)
 
     def prepare_headers(self, message: Message, destination_topic: str, message_matched_to_rule: bool) -> None:
         """
@@ -388,6 +445,53 @@ class KafkaRouter:
             self.upsert_header(f'__{self.get_dlq_id()}.partition', message.partition())
             self.upsert_header(f'__{self.get_dlq_id()}.offset', message.offset())
             self.upsert_header(f'__{self.get_dlq_id()}.message', 'Message not matched to any routing rules.')
+
+    @PROCESS_TIME.time()
+    def process_message(self, message: Message):
+        """
+        Process a message that has been consumed from an input topic.
+
+        Parameters
+        ----------
+        message : Message
+            The consumed message to be processed.
+
+        Raises
+        ------
+        KafkaError
+            If an error occurred in the consumer.
+        """
+        if message.error():
+            if message.error().code() == KafkaError._PARTITION_EOF:
+                logger.debug('End of partition reached {0}/{1}'.format(message.topic(), message.partition()))
+            else:
+                raise KafkaException(message.error())
+        else:
+            logger.debug(f'Consumed message from {message.topic()}: {message.value().decode("utf-8")}')
+            self.match_message_to_rule(message)
+
+    def produce(self, topic: str, value: str, key: str, headers: list) -> None:
+        """
+        Produce a message onto a topic unless dry run and DLQ mode is on.
+
+        Parameters
+        ----------
+        topic : str
+            The topic to be written to.
+        value : str
+            The value of the message.
+        key : str
+            The key of the message.
+        headers : list
+            The headers of the message.
+        """
+        if not self.dlq_mode() and not self.dry_run_mode():
+            self.producer.produce(topic, value, key, headers=self.headers())
+            logger.debug('Flushing the producer.')
+            self.producer.flush()
+            producer_message_count.inc()
+        else:
+            logger.debug(f'Skipping producing message to {topic} as dry-run mode is on.')
 
     def report_message_matching_status(self, destination_topic: str, message_matched_to_rule: bool) -> None:
         """
@@ -430,29 +534,50 @@ class KafkaRouter:
             sys.exit(0)
 
         self.validate_consumer_config(self.consumer_conf)
-        consumer = Consumer(self.consumer_conf)
-        producer = Producer(self.producer_conf)
+        self.consumer = Consumer(self.consumer_conf)
+        self.producer = Producer(self.producer_conf)
 
         try:
-            consumer.subscribe(self.source_topics)
+            self.consumer.subscribe(self.source_topics)
+            time_of_last_message = time.time() * 1000
 
-            while True:
-                msg = consumer.poll(timeout=1.0)
+            while self.running():
+                self.check_for_timeout(time_of_last_message)
+                msg = self.consumer.poll(timeout=1.0)
 
                 if msg is None:
                     logger.debug('Message is None.')
                     continue
 
+                time_of_last_message = time.time() * 1000
                 consumer_message_count.inc()
-                self.process_message(msg, producer)
+                self.process_message(msg)
                 logger.debug('Committing the message in the consumer.')
-                consumer.commit(msg)
-                consumer_message_committed_count.inc()
+                self.commit(msg)
         except SystemExit:
             logger.warning('SystemExit exception caught.')
         finally:
             logger.info('Closing the consumer.')
-            consumer.close()
+            self.consumer.close()
+
+    def running(self, running: bool = None) -> bool:
+        """
+        Get or set the running state.
+
+        Parameters
+        ----------
+        running : bool, optional
+            Set the running state if not None, by default None
+
+        Returns
+        -------
+        bool
+            Get the running state.
+        """
+        if running is not None:
+            self._running = running
+
+        return self._running
 
     def upsert_header(self, new_key: str, new_value: str) -> None:
         """
