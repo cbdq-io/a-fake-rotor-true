@@ -86,6 +86,7 @@ Feature: System Tests
         | test        | TEST01D      | GB.output.json |
         | test        | TEST01E      | IE.output.json |
         | test        | TEST01F      | IE.output.json |
+        | test        | TEST02A      | router.dlq     |
 
     Scenario: Stop The Router Container
         Given the TestInfra host with URL "local://" is ready
