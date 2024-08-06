@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 0.1.2
+
+### New
+
+* Implement KAFKA_ROUTER_DLQ_MODE, KAFKA_ROUTER_DRY_RUN_MODE and KAFKA_ROUTER_TIMEOUT_MS. [Ben Dalling]
+
+
 ## 0.1.2 (2024-08-06)
 
 ### Fix
