@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 0.1.2
+
+### New
+
+* Add contributing guidelines. [Ben Dalling]
+
+
 ## 0.1.2 (2024-08-06)
 
 ### Fix
