@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - '*'
+      - '**'
   schedule:
     - cron: '0 3 * * *' # Runs at 03:00 every morning
 
