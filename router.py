@@ -76,6 +76,47 @@ producer_message_count = Counter(f'{kafka_prefix}producer_message_count', 'The c
 class EnvironmentConfig:
     """Extract configuration from environment variables."""
 
+    def get_boolean(self, key: str) -> bool:
+        """
+        Get a boolean value from an environment variable.
+
+        If the environment variable is not set, return False.
+
+        Parameters
+        ----------
+        key : str
+            The name of the environment variable.
+
+        Returns
+        -------
+        bool
+            If the environment variable value indicated True or False.
+
+        Raises
+        ------
+        ValueError
+            If the environment is set, but can't ascertain from its value if
+            it should be True or False.
+        """
+        value_map = {
+            'TRUE': True,
+            'T': True,
+            '1': True,
+            'YES': True,
+            'Y': True,
+            'FALSE': False,
+            'F': False,
+            '0': False,
+            'NO': False,
+            'N': False
+        }
+        value = os.getenv(key, 'False')
+
+        try:
+            return value_map[value.upper()]
+        except KeyError:
+            raise ValueError(f'Unknown value ("{value}") for boolean set in "{key}".')
+
     def get_config(self, prefix: str) -> dict:
         """
         Extract configuration from the environment variables.
@@ -218,8 +259,8 @@ class KafkaRouter:
         signal.signal(signal.SIGINT, self.handler)
         signal.signal(signal.SIGTERM, self.handler)
         self.running(True)
-        self.dlq_mode(os.getenv('KAFKA_ROUTER_DLQ_MODE', 'False') == 'True')
-        self.dry_run_mode(os.getenv('KAFKA_ROUTER_DRY_RUN_MODE', 'False') == 'True')
+        self.dlq_mode(env_config.get_boolean('KAFKA_ROUTER_DLQ_MODE'))
+        self.dry_run_mode(env_config.get_boolean('KAFKA_ROUTER_DRY_RUN_MODE'))
 
         if self.dlq_mode():
             self.timeout_ms = int(os.getenv('KAFKA_ROUTER_TIMEOUT_MS', '500'))
