@@ -5,6 +5,8 @@
 
 ### New
 
+* Add documentation, tests and logic for DLQ replaying. [Ben Dalling]
+
 * Add contributing guidelines. [Ben Dalling]
 
 ### Fix

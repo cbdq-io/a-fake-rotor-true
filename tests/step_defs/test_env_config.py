@@ -2,14 +2,11 @@
 
 import os
 
-from pytest_bdd import given, parsers, scenario, then, when
+from pytest_bdd import given, parsers, scenarios, then, when
 
 from router import EnvironmentConfig
 
-
-@scenario('../features/env-config.feature', 'Kafka Consumer')
-def test_kafka_consumer():
-    """Kafka Consumer."""
+scenarios('../features/env-config.feature')
 
 
 @given('an EnvironmentConfig object', target_fixture='environment_config')
@@ -35,3 +32,17 @@ def _(config_key: str, value: str, environment_config: EnvironmentConfig, enviro
     """config <config_key> has a value of <value>."""
     config = environment_config.get_config(environment_config_prefix)
     assert config[config_key] == value
+
+
+@then(parsers.parse('env config boolean for {key} is {expected_value}'))
+def _(key: str, expected_value: bool, environment_config: EnvironmentConfig):
+    """env config boolean for <key> is <boolean>."""
+    expected_boolean = expected_value == 'True'
+
+    try:
+        actual_value = environment_config.get_boolean(key)
+    except ValueError:
+        assert expected_value == 'ValueError'
+        return
+
+    assert actual_value == expected_boolean

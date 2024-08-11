@@ -1,5 +1,7 @@
 # a-fake-rotor-true
-A configurable router for Kafka messages.
+A configurable router for Kafka messages.  Can also be used to replay
+selected messages from a dead letter queue (DLQ) topic.  See the
+[DLQ replay examples](./examples/README.md) for more details.
 
 What's with the name?  It's an anagram of "Kafka Router".
 
@@ -49,9 +51,12 @@ If no default is provided, the configuration item is mandatory.
 | Configuration | Default | Notes |
 | ------------- | ------- | ----- |
 | KAFKA_ROUTER_DLQ_ID | "" | If not provided will be set to KAFKA_CONSUMER_CLIENT_ID (if present) or KAFKA_CONSUMER_GROUP_ID. |
+| KAFKA_ROUTER_DLQ_MODE | False | If True, obeys KAFKA_ROUTER_TIMEOUT_MS and will not commit on the consumer. |
 | KAFKA_ROUTER_DLQ_TOPIC_NAME | "" | Will attempt to write messages that no rules apply to this topic.  If blank, the router warn no matches were found for the message and continue. |
+| KAFKA_ROUTER_DRY_RUN_MODE | False | If True AND KAFKA_ROUTER_DLQ_MODE is True then don't produce any messages. |
 | KAFKA_ROUTER_PROMETHEUS_PORT | 8000 | The port for Prometheus metrics. |
 | KAFKA_ROUTER_PROMETHEUS_PREFIX | "" | A prefix name to add to the prometheus metrics (e.g. "dev_"). |
+| KAFKA_ROUTER_TIMEOUT_MS | 500 | Exit if no message is available for consumption for the specified interval.  Ignored unless KAFKA_ROUTER_DLQ_MODE is "True" |
 | LOG_LEVEL     | WARN    | Can be DEBUG, INFO, WARN or ERROR. |
 
 ### Headers of Messages Placed on the DLQ Topic
