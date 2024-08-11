@@ -38,11 +38,23 @@ configuration.
    ```
 1. Setup the Upstream Repository
    ```shell
+   cd a-fake-rotor-true
+
    # If using HTTP
    git remote add upstream https://github.com/cbdq-io/a-fake-rotor-true.git
 
    # If using SSH
    git remote add upstream git@github.com:cbdq-io/a-fake-rotor-true.git
+   ```
+1. Setup the PyEnv Environment
+   ```shell
+   pyenv virtualenv a-fake-rotor-true
+   pyenv local a-fake-rotor-true
+   pip install -Ur requirements.txt requirements-dev.txt
+   ```
+1. Run End-to-End Tests
+   ```shell
+   make
    ```
 
 ## Branching Model
@@ -135,8 +147,9 @@ are available:
 - Other: Where no category has been able to be guessed from the commit
   message.
 
-Ensuring your well formatted, meaningful commit message goes to the correct
-section is a case of prefixing the message with a specific key word.
+To ensure your well-crafted, meaningful commit message is properly
+directed to the correct section, prefix it with the appropriate keyword
+for the correct section.
 
 Here are some use cases to describe getting your commit message to
 the correct section:

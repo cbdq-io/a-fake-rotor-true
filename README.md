@@ -1,5 +1,7 @@
 # a-fake-rotor-true
-A configurable router for Kafka messages.
+A configurable router for Kafka messages.  Can also be used to replay
+selected messages from a dead letter queue (DLQ) topic.  See the
+[DLQ replay examples](./examples/README.md) for more details.
 
 What's with the name?  It's an anagram of "Kafka Router".
 

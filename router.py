@@ -48,6 +48,7 @@ import types
 
 import jmespath
 import jsonschema
+import redmx
 from confluent_kafka import (Consumer, KafkaError, KafkaException, Message,
                              Producer)
 from prometheus_client import Counter, Info, Summary, start_http_server
@@ -58,19 +59,21 @@ logging.basicConfig()
 logger = logging.getLogger(PROG)
 log_level = os.getenv('LOG_LEVEL', 'WARN')
 logger.setLevel(log_level)
-logger.debug(f'Log level has been set to "{log_level}".')
+logger.info(f'Log level has been set to "{log_level}".')
 
 """ Prometheus Metrics. """
 kafka_prefix = os.getenv('KAFKA_ROUTER_PROMETHEUS_PREFIX', '')
 PROCESS_TIME = Summary(f'{kafka_prefix}processing_time_seconds', 'Time spent processing message.')
 VERSION_INFO = Info(f'{kafka_prefix}run_version', 'The currently running version.')
 VERSION_INFO.info({f'{kafka_prefix}version': __version__})
-consumer_message_count = Counter(f'{kafka_prefix}consumer_message_count', 'The count of messages consumed.')
+prom_consumer_message_count = Counter(f'{kafka_prefix}consumer_message_count', 'The count of messages consumed.')
+consumer_message_count = redmx.RateErrorDuration()
 consumer_message_committed_count = Counter(f'{kafka_prefix}consumer_message_committed_count',
                                            'The count of messages consumed and committed.')
 non_routed_error_count = Counter(f'{kafka_prefix}non_routed_error_count',
                                  'The count of messages that could not be routed.')
-producer_message_count = Counter(f'{kafka_prefix}producer_message_count', 'The count of messages produced.')
+prom_producer_message_count = Counter(f'{kafka_prefix}producer_message_count', 'The count of messages produced.')
+producer_message_count = redmx.RateErrorDuration()
 
 
 class EnvironmentConfig:
@@ -137,10 +140,7 @@ class EnvironmentConfig:
         for key in sorted(os.environ):
             if key.startswith(prefix):
                 value = os.environ[key]
-                message = f'Converted environment variable "{key}" to '
                 key = key.removeprefix(prefix).replace('_', '.').lower()
-                message += f' config item "{key}".'
-                logger.debug(message)
                 response[key] = value
 
         return response
@@ -159,16 +159,14 @@ class KafkaRouterRule:
     """
 
     def __init__(self, name: str, rule: str) -> None:
-        logger.debug(f'Adding the {name} KafkaRouterRule "{rule}".')
         with open('rule-schema.json', 'r') as stream:
             schema = json.load(stream)
 
         try:
             instance = json.loads(rule)
-            logger.debug(f'Instance is "{instance}".')
             jsonschema.validate(instance=instance, schema=schema)
         except json.decoder.JSONDecodeError:
-            logger.error(f'{name} is not valid JSON.')
+            logger.error(f'{name} ("{rule}") is not valid JSON.')
             sys.exit(2)
         except jsonschema.exceptions.ValidationError as ex:
             logger.error(f'{name} is not valid {ex}')
@@ -176,7 +174,8 @@ class KafkaRouterRule:
 
         self.name = name.removeprefix('KAFKA_ROUTER_RULE_')
         self.destination_topic = instance['destination_topic']
-        self.header_jmespath = instance.get('header_jmespath', None)
+        self.header = instance.get('header', None)
+        self.header_regexp = instance.get('header_regexp', None)
         self.jmespath = instance.get('jmespath', None)
         self.regexp = instance.get('regexp', None)
         self.source_topic = instance['source_topic']
@@ -202,10 +201,64 @@ class KafkaRouterRule:
 
         if self.jmespath:
             data = json.loads(raw_message)
-            logger.debug(f'JMESPath is looking for "{self.jmespath}" in "{data}".')
             return jmespath.search(self.jmespath, data)
 
         return raw_message
+
+    def is_match(self, message: Message) -> bool:
+        """
+        Check if the provided message is a match for this rule.
+
+        Parameters
+        ----------
+        message : Message
+            The Confluent Kafka message.
+
+        Returns
+        -------
+        bool
+            True if the message is a match against the rule, False otherwise.
+        """
+        source_topic = message.topic()
+        headers = message.headers()
+
+        if source_topic != self.source_topic:
+            return False
+        if not self.match_header(headers):
+            return False
+        if not self.match_message(message):
+            return False
+
+        log_message = f'Message on topic "{message.topic()}" ({message.partition()}/{message.offset()}) '
+        log_message += f'matches rule "{self.name}" ({self.destination_topic}).'
+        logger.debug(log_message)
+        return True
+
+    def match_header(self, headers: list) -> bool:
+        """
+        Match the headers against the specified rule.
+
+        Parameters
+        ----------
+        headers : list
+            The message headers.
+
+        Returns
+        -------
+        bool
+            True if no headers rules provided, or the header matches the regexp.
+            False otherwise.
+        """
+        if not self.header:
+            return True
+
+        for header in headers:
+            key, value = header
+
+            if key == self.header and re.search(self.header_regexp, value.decode()):
+                return True
+
+        return False
 
     def match_message(self, message: Message) -> bool:
         """
@@ -221,15 +274,10 @@ class KafkaRouterRule:
         bool
             True if the message matches the rule, false otherwise,
         """
-        source_topic = message.topic()
-        raw_message = message.value().decode('utf-8')
-        logger.debug(f'Matching message "{raw_message}" against the {self.name} rule.')
-
-        if source_topic == self.source_topic and not self.regexp:
+        if not self.regexp:
             return True
 
         data = self.get_data(message)
-        logger.debug(f'Data extracted for comparison is "{data}".')
 
         if data and re.search(self.regexp, data):
             return True
@@ -260,10 +308,13 @@ class KafkaRouter:
         signal.signal(signal.SIGTERM, self.handler)
         self.running(True)
         self.dlq_mode(env_config.get_boolean('KAFKA_ROUTER_DLQ_MODE'))
+        logger.info(f'DLQ mode - {self.dlq_mode()}')
         self.dry_run_mode(env_config.get_boolean('KAFKA_ROUTER_DRY_RUN_MODE'))
+        logger.info(f'Dry run mode - {self.dry_run_mode()}')
 
         if self.dlq_mode():
             self.timeout_ms = int(os.getenv('KAFKA_ROUTER_TIMEOUT_MS', '500'))
+            logger.debug(f'Timeout - {self.timeout_ms}ms.')
         else:
             self.timeout_ms = 0
 
@@ -300,7 +351,6 @@ class KafkaRouter:
             The timestamp (in ms) of when the last message was processed.
         """
         if not self.dlq_mode():
-            logger.debug('DLQ Mode is disabled.')
             return
 
         time_now = time.time() * 1000
@@ -444,7 +494,7 @@ class KafkaRouter:
 
         for rule in self.rules:
             try:
-                if rule.match_message(message):
+                if rule.is_match(message):
                     destination_topic = rule.destination_topic
                     message_matched_to_rule = True
                     break
@@ -460,11 +510,10 @@ class KafkaRouter:
                 message_matched_to_rule = True
 
         if destination_topic:
-            logger.debug(f'Producing message onto the {destination_topic} topic.')
             self.prepare_headers(message, destination_topic, message_matched_to_rule)
             self.produce(destination_topic, message.value(), message.key(), self.headers())
 
-        self.report_message_matching_status(destination_topic, message_matched_to_rule)
+        self.report_message_matching_status(destination_topic, message, message_matched_to_rule)
 
     def prepare_headers(self, message: Message, destination_topic: str, message_matched_to_rule: bool) -> None:
         """
@@ -508,7 +557,6 @@ class KafkaRouter:
             else:
                 raise KafkaException(message.error())
         else:
-            logger.debug(f'Consumed message from {message.topic()}: {message.value().decode("utf-8")}')
             self.match_message_to_rule(message)
 
     def produce(self, topic: str, value: str, key: str, headers: list) -> None:
@@ -526,15 +574,14 @@ class KafkaRouter:
         headers : list
             The headers of the message.
         """
-        if not self.dlq_mode() and not self.dry_run_mode():
+        if not self.dry_run_mode():
             self.producer.produce(topic, value, key, headers=self.headers())
-            logger.debug('Flushing the producer.')
             self.producer.flush()
-            producer_message_count.inc()
-        else:
-            logger.debug(f'Skipping producing message to {topic} as dry-run mode is on.')
+            prom_producer_message_count.inc()
+            producer_message_count.increment_count()
 
-    def report_message_matching_status(self, destination_topic: str, message_matched_to_rule: bool) -> None:
+    def report_message_matching_status(self, destination_topic: str, message: Message,
+                                       message_matched_to_rule: bool) -> None:
         """
         Report and set metrics for if the message was matched or not.
 
@@ -545,6 +592,8 @@ class KafkaRouter:
         ----------
         destination_topic: str
             The name of the topic that the message is being routed to.
+        message: Message
+            The message that was matched.
         message_matched_to_rule : bool
             True if the message was successfully matched to a routing rule,
             False otherwise.
@@ -552,16 +601,8 @@ class KafkaRouter:
         if message_matched_to_rule and destination_topic == self.DLQ_topic_name:
             non_routed_error_count.inc()
         elif message_matched_to_rule:
-            logger.debug('The message was successfully matched to a rule.')
+            pass
         else:
-            message = 'The message did not match any configured rules.  '
-
-            if self.DLQ_topic_name:
-                message += f'It has been sent to the {self.DLQ_topic_name} topic.'
-            else:
-                message += 'The message will no longer be processed.'
-
-            logger.warn(message)
             non_routed_error_count.inc()
 
     def router(self) -> None:
@@ -587,18 +628,20 @@ class KafkaRouter:
                 msg = self.consumer.poll(timeout=1.0)
 
                 if msg is None:
-                    logger.debug('Message is None.')
+                    logger.debug('No messages to consume.')
                     continue
 
                 time_of_last_message = time.time() * 1000
-                consumer_message_count.inc()
+                consumer_message_count.increment_count()
+                prom_consumer_message_count.inc()
                 self.process_message(msg)
-                logger.debug('Committing the message in the consumer.')
                 self.commit(msg)
         except SystemExit:
             logger.warning('SystemExit exception caught.')
         finally:
             logger.info('Closing the consumer.')
+            logger.info(f'Consumed {consumer_message_count.count()} messages.')
+            logger.info(f'Produced {producer_message_count.count()} messages.')
             self.consumer.close()
 
     def running(self, running: bool = None) -> bool:
