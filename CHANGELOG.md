@@ -5,11 +5,17 @@
 
 ### New
 
+* Add documentation, tests and logic for DLQ replaying. [Ben Dalling]
+
 * Add contributing guidelines. [Ben Dalling]
+
+* Add contributing guidelines. [Ben Dalling]
+
+* Implement KAFKA_ROUTER_DLQ_MODE, KAFKA_ROUTER_DRY_RUN_MODE and KAFKA_ROUTER_TIMEOUT_MS. [Ben Dalling]
 
 ### Fix
 
-* Attempt to upgrade libpq-dev and libpq5 to fix CVE-2024-7348. [Ben Dalling]
+* Make parsing of booleans from the environment more leniant. [Ben Dalling]
 
 
 ## 0.1.2 (2024-08-06)

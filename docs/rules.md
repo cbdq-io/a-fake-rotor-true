@@ -70,6 +70,12 @@ These examples are taken from the tests ran as part of the system tests.
 }
 ```
 
+### Message 7
+
+```
+Hello, world!
+```
+
 ## Rules
 
 Rules are configured as JSON, the format of which must match the schema
@@ -77,6 +83,10 @@ provided in `rule-schema.json`.  The fields are:
 
 - destination_topic: Where the message is to be routed to when the rule
   is matched.
+- header: The name of a header to match against.  If provided, header_regexp
+  header_regexp is required.
+- header_regexp:  The regular expression to match against the value
+  in the header.  If provided, header is required.
 - jmespath: A [JMESPath](https://jmespath.org/) expression to query an
   element within the JSON contained in the message.
 - regexp: A
@@ -146,3 +156,4 @@ In these examples, the DLQ topic has been set to `input.dlq`.
 | 4         | GB.output         | The country code is GB.                                      |
 | 5         | IE.output         | The VAT/CBL number has a prefix of IE.                       |
 | 6         | IE.output         | The country code is IE.                                      |
+| 7         | input.dlq         | Unable to parse JSON.                                        |

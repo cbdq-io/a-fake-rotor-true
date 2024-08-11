@@ -1,16 +1,78 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
+    "dependencies": {
+        "header": {
+            "oneOf": [
+                {
+                    "required": [
+                        "header_regexp"
+                    ]
+                },
+                {
+                    "not": {
+                        "required": [
+                            "header_regexp"
+                        ]
+                    }
+                }
+            ]
+        },
+        "header_regexp": {
+            "oneOf": [
+                {
+                    "required": [
+                        "header"
+                    ]
+                },
+                {
+                    "not": {
+                        "required": [
+                            "header"
+                        ]
+                    }
+                }
+            ]
+        },
+        "jmespath": {
+            "oneOf": [
+                {
+                    "required": [
+                        "regexp"
+                    ]
+                },
+                {
+                    "not": {
+                        "required": [
+                            "regexp"
+                        ]
+                    }
+                }
+            ]
+        }
+    },
     "properties": {
         "destination_topic": {
+            "description": "The topic to which data will be sent.",
+            "type": "string"
+        },
+        "header": {
+            "description": "An optional header field that can contain metadata or additional information.",
+            "type": "string"
+        },
+        "header_regexp": {
+            "description": "A regular expression to be matched against the header.",
             "type": "string"
         },
         "jmespath": {
+            "description": "A JMESPath expression used for querying data.",
             "type": "string"
         },
         "regexp": {
+            "description": "A regular expression pattern for matching data.",
             "type": "string"
         },
         "source_topic": {
+            "description": "The topic from which data will be retrieved.",
             "type": "string"
         }
     },
