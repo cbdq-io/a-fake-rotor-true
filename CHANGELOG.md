@@ -1,7 +1,14 @@
 # Changelog
 
 
-## 0.2.0
+## 0.2.1
+
+### Fix
+
+* Ensure the router fails completely if unable to produce a message. [Ben Dalling]
+
+
+## 0.2.0 (2024-08-11)
 
 ### New
 
