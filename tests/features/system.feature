@@ -96,11 +96,13 @@ Feature: System Tests
 
     Scenario Outline: Ensure Graceful Shutdown of the Kafka Consumer
         Given the TestInfra host with URL "local://" is ready
-        When the TestInfra command is "docker compose logs router"
+        When the TestInfra command is "docker compose logs <service>"
         Then the TestInfra command stdout contains "<expected_output>"
 
         Examples:
-        | expected_output                             |
-        | WARNING:router:Caught signal SIGTERM (15).  |
-        | WARNING:router:SystemExit exception caught. |
-        | INFO:router:Closing the consumer.           |
+        | service | expected_output                             |
+        | router  | WARNING:router:Caught signal SIGTERM (15).  |
+        | router  | WARNING:router:SystemExit exception caught. |
+        | router  | INFO:router:Closing the consumer.           |
+        | doomed  | INFO:router:Consumed 1 messages.            |
+        | doomed  | INFO:router:Produced 0 messages.            |

@@ -66,3 +66,33 @@ services:
       SENTRY_SAMPLE_RATE: 1.0
     ports:
       - 8000:8000
+
+  doomed:
+    build:
+      context: .
+      tags:
+        - router:latest
+    container_name: doomed
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    environment:
+      KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+      KAFKA_CONSUMER_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_CONSUMER_CLIENT_ID: kafka_router
+      KAFKA_CONSUMER_ENABLE_AUTO_COMMIT: false
+      KAFKA_CONSUMER_GROUP_ID: kafka_router_2
+      KAFKA_PRODUCER_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_PRODUCER_DELIVERY_TIMEOUT_MS: 15000
+      KAFKA_PRODUCER_LINGER_MS: 5000
+      KAFKA_PRODUCER_REQUEST_TIMEOUT_MS: 10000
+      KAFKA_ROUTER_PROMETHEUS_PORT: 8001
+      KAFKA_ROUTER_DLQ_TOPIC_NAME: 'router.dlq'
+      KAFKA_ROUTER_RULE_DOOMED_DO_FAIL: '{"destination_topic":"non_existent","source_topic":"input.json"}'
+      KAFKA_ROUTER_PROMETHEUS_PREFIX: "docker_"
+      LOG_LEVEL: DEBUG
+      SENTRY_ENABLE_TRACING: "True"
+      SENTRY_ENVIRONMENT: "docker"
+      SENTRY_SAMPLE_RATE: 1.0
+    ports:
+      - 8001:8001
