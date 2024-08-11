@@ -445,7 +445,24 @@ class KafkaRouter:
         """
         if not self.dlq_mode():
             self.consumer.commit(message)
+            logger.debug('Successfully committed consumer.')
             consumer_message_committed_count.inc()
+
+    def delivery_report(self, err: KafkaError, message: Message) -> None:
+        """
+        Get the delivery result for the producer.
+
+        Parameters
+        ----------
+        err : KafkaError
+            Will be None if no error happened.
+        message : Message
+            The message being produced.
+        """
+        if err is not None:
+            error_message = f'Message delivery failed: "{err}".'
+            logger.error(error_message)
+            raise KafkaException(error_message)
 
     def dlq_mode(self, dlq_mode: bool = None) -> bool:
         """
@@ -650,8 +667,9 @@ class KafkaRouter:
             The headers of the message.
         """
         if not self.dry_run_mode():
-            self.producer.produce(topic, value, key, headers=self.headers())
+            self.producer.produce(topic, value, key, headers=self.headers(), callback=self.delivery_report)
             self.producer.flush()
+            logger.debug('Successfully flushed message on the producer.')
             prom_producer_message_count.inc()
             producer_message_count.increment_count()
 

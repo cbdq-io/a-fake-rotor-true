@@ -40,7 +40,7 @@ jobs:
           pip check
 
       - name: Run Make
-        run: make
+        run: make github
 
   Trivy:
     runs-on: ubuntu-latest

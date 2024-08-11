@@ -5,8 +5,8 @@ TAG := $(shell grep ^__version__ router.py | cut -d\' -f 2)
 all: clean lint build test
 
 build:
-	docker compose build router
-	docker compose run --no-deps --rm router pip freeze > requirements.txt
+	docker compose --progress=quiet build router
+	docker compose --progress=quiet run --no-deps --rm router pip freeze > requirements.txt
 
 changelog:
 	PYTHONPATH=. gitchangelog > CHANGELOG.md
@@ -18,8 +18,10 @@ clean:
 cleanall: clean
 	docker system prune --all --force --volumes
 
+github: clean lint build test-github
+
 lint:
-	docker run --rm -i hadolint/hadolint < Dockerfile
+	docker run --quiet --rm -i hadolint/hadolint < Dockerfile
 	isort -v .
 	flake8
 
@@ -30,7 +32,11 @@ tag:
 	@echo ${TAG}
 
 test:
-	docker compose up -d --wait
+	docker compose --progress=quiet up -d --wait
+	LOG_LEVEL=DEBUG PYTHONPATH=.:.. pytest
+
+test-github:
+	docker compose --progress=quiet up -d --wait router
 	LOG_LEVEL=DEBUG PYTHONPATH=.:.. pytest
 
 trivy:
