@@ -60,5 +60,9 @@ services:
       KAFKA_ROUTER_RULE_COUNTRY_IE_VAT_NUMBER: '{"destination_topic":"IE.output.json","jmespath":"vat_number","regexp":"^IE","source_topic":"input.json"}'
       KAFKA_ROUTER_PROMETHEUS_PREFIX: "docker_"
       LOG_LEVEL: DEBUG
+      SENTRY_DSN: "${SENTRY_DSN:-}"
+      SENTRY_ENABLE_TRACING: "True"
+      SENTRY_ENVIRONMENT: "docker"
+      SENTRY_SAMPLE_RATE: 1.0
     ports:
       - 8000:8000

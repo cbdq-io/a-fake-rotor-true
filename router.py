@@ -49,6 +49,7 @@ import types
 import jmespath
 import jsonschema
 import redmx
+import sentry_sdk
 from confluent_kafka import (Consumer, KafkaError, KafkaException, Message,
                              Producer)
 from prometheus_client import Counter, Info, Summary, start_http_server
@@ -77,7 +78,36 @@ producer_message_count = redmx.RateErrorDuration()
 
 
 class EnvironmentConfig:
-    """Extract configuration from environment variables."""
+    """
+    Extract configuration from environment variables.
+
+    Parameters
+    ----------
+    delimiter : str, optional
+        The delimiter to use on the created config., by default '.'
+    """
+
+    def __init__(self, delimiter: str = '.') -> None:
+        self.delimiter(delimiter)
+
+    def delimiter(self, delimiter: str = None) -> str:
+        """
+        Get or set the delimiter.
+
+        Parameters
+        ----------
+        delimiter : str, optional
+            Set the delimiter to the string provided, by default None
+
+        Returns
+        -------
+        str
+            The delimiter.
+        """
+        if delimiter is not None:
+            self._delimiter = delimiter
+
+        return self._delimiter
 
     def get_boolean(self, key: str) -> bool:
         """
@@ -120,7 +150,7 @@ class EnvironmentConfig:
         except KeyError:
             raise ValueError(f'Unknown value ("{value}") for boolean set in "{key}".')
 
-    def get_config(self, prefix: str) -> dict:
+    def get_config(self, prefix: str, parse_values: bool = False) -> dict:
         """
         Extract configuration from the environment variables.
 
@@ -129,6 +159,9 @@ class EnvironmentConfig:
         prefix : str
             The prefix to identify the relevant environment variables
             (e.g. KAFKA_CONSUMER_).
+        parse_values : bool, optional
+            Should values of "True" be converted to a boolean or int and
+            float values.  Default is False.
 
         Returns
         -------
@@ -140,10 +173,52 @@ class EnvironmentConfig:
         for key in sorted(os.environ):
             if key.startswith(prefix):
                 value = os.environ[key]
-                key = key.removeprefix(prefix).replace('_', '.').lower()
+                key = key.removeprefix(prefix).replace('_', self.delimiter()).lower()
+
+                if parse_values:
+                    message = f'"{value}" parsed to '
+                    value = self.parse_value(value)
+                    message += f'{value}.'
+
                 response[key] = value
 
         return response
+
+    def parse_value(self, value: str) -> object:
+        """
+        Parse the value (if enabled).
+
+        Parameters
+        ----------
+        value : str
+            The string representation of the value.
+
+        Returns
+        -------
+        object
+            A more appropriate object type
+        """
+        value_map = {
+            'False': False,
+            'True': True
+        }
+
+        if value in value_map:
+            return value_map[value]
+
+        try:
+            response = int(value)
+            return response
+        except ValueError:
+            pass
+
+        try:
+            response = float(value)
+            return response
+        except ValueError:
+            pass
+
+        return value
 
 
 class KafkaRouterRule:
@@ -631,11 +706,12 @@ class KafkaRouter:
                     logger.debug('No messages to consume.')
                     continue
 
-                time_of_last_message = time.time() * 1000
-                consumer_message_count.increment_count()
-                prom_consumer_message_count.inc()
-                self.process_message(msg)
-                self.commit(msg)
+                with sentry_sdk.start_transaction(op='task', name='Process consumed message'):
+                    time_of_last_message = time.time() * 1000
+                    consumer_message_count.increment_count()
+                    prom_consumer_message_count.inc()
+                    self.process_message(msg)
+                    self.commit(msg)
         except SystemExit:
             logger.warning('SystemExit exception caught.')
         finally:
@@ -714,6 +790,15 @@ class KafkaRouter:
 
 
 if __name__ == '__main__':
+    sentry_dsn = os.getenv('SENTRY_DSN', None)
+
+    if sentry_dsn:
+        sentry_config = EnvironmentConfig('_')
+        sentry_config = sentry_config.get_config('SENTRY_', True)
+        sentry_config['release'] = f'{PROG}@{__version__}'
+        logger.debug(f'Sentry config "{sentry_config}".')
+        sentry_sdk.init(**sentry_config)
+
     start_http_server(int(os.getenv('KAFKA_ROUTER_PROMETHEUS_PORT', '8000')))
     router = KafkaRouter(os.getenv('KAFKA_ROUTER_DLQ_TOPIC_NAME', None))
     router.router()

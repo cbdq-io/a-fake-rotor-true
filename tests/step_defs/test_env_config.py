@@ -30,7 +30,7 @@ def _(key: str, value: str):
 @then(parsers.parse('config {config_key} has a value of {value}'))
 def _(config_key: str, value: str, environment_config: EnvironmentConfig, environment_config_prefix: str):
     """config <config_key> has a value of <value>."""
-    config = environment_config.get_config(environment_config_prefix)
+    config = environment_config.get_config(environment_config_prefix, True)
     assert config[config_key] == value
 
 

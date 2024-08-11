@@ -58,6 +58,7 @@ If no default is provided, the configuration item is mandatory.
 | KAFKA_ROUTER_PROMETHEUS_PREFIX | "" | A prefix name to add to the prometheus metrics (e.g. "dev_"). |
 | KAFKA_ROUTER_TIMEOUT_MS | 500 | Exit if no message is available for consumption for the specified interval.  Ignored unless KAFKA_ROUTER_DLQ_MODE is "True" |
 | LOG_LEVEL     | WARN    | Can be DEBUG, INFO, WARN or ERROR. |
+| SENTRY_DSN    | "" | If configured in the environment, will be used to configure the DSN in [Sentry](www.sentry.io). |
 
 ### Headers of Messages Placed on the DLQ Topic
 
