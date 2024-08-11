@@ -18,6 +18,8 @@ clean:
 cleanall: clean
 	docker system prune --all --force --volumes
 
+github: clean lint build test-github
+
 lint:
 	docker run --quiet --rm -i hadolint/hadolint < Dockerfile
 	isort -v .
@@ -31,6 +33,10 @@ tag:
 
 test:
 	docker compose --progress=quiet up -d --wait
+	LOG_LEVEL=DEBUG PYTHONPATH=.:.. pytest
+
+test-github:
+	docker compose --progress=quiet up -d --wait router
 	LOG_LEVEL=DEBUG PYTHONPATH=.:.. pytest
 
 trivy:

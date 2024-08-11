@@ -104,5 +104,13 @@ Feature: System Tests
         | router  | WARNING:router:Caught signal SIGTERM (15).  |
         | router  | WARNING:router:SystemExit exception caught. |
         | router  | INFO:router:Closing the consumer.           |
+
+    Scenario Outline: Ensure Graceful Shutdown of the Kafka Consumer
+        Given the TestInfra host with URL "local://" is ready
+        When When the TestInfra environment variable GITHUB_ACTIONS is true skip tests
+        And the TestInfra command is "docker compose logs <service>"
+        Then the TestInfra command stdout contains "<expected_output>"
+        Examples:
+        | service | expected_output                             |
         | doomed  | INFO:router:Consumed 1 messages.            |
         | doomed  | INFO:router:Produced 0 messages.            |
