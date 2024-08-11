@@ -55,6 +55,7 @@ Feature: System Tests
         | confluent-kafka   |
         | prometheus_client |
         | redmx             |
+        | sentry-sdk        |
 
     Scenario Outline: System Test Outcomes
         Given the TestInfra host with URL "docker://router" is ready

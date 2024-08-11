@@ -1,3 +1,7 @@
+.EXPORT_ALL_VARIABLES:
+
+TAG := $(shell grep ^__version__ router.py | cut -d\' -f 2)
+
 all: clean lint build test
 
 build:
@@ -23,7 +27,7 @@ non-system-tests:
 	LOG_LEVEL=DEBUG PYTHONPATH=.:.. pytest -m 'not system'
 
 tag:
-	@grep ^__version__ router.py | cut -d\' -f 2
+	@echo ${TAG}
 
 test:
 	docker compose up -d --wait
