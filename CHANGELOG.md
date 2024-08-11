@@ -5,9 +5,17 @@
 
 ### New
 
+* Add documentation, tests and logic for DLQ replaying. [Ben Dalling]
+
+* Add contributing guidelines. [Ben Dalling]
+
 * Add contributing guidelines. [Ben Dalling]
 
 * Implement KAFKA_ROUTER_DLQ_MODE, KAFKA_ROUTER_DRY_RUN_MODE and KAFKA_ROUTER_TIMEOUT_MS. [Ben Dalling]
+
+### Fix
+
+* Make parsing of booleans from the environment more leniant. [Ben Dalling]
 
 
 ## 0.1.2 (2024-08-06)
