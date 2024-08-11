@@ -107,7 +107,7 @@ Feature: System Tests
 
     Scenario Outline: Ensure Graceful Shutdown of the Kafka Consumer
         Given the TestInfra host with URL "local://" is ready
-        When When the TestInfra environment variable GITHUB_ACTIONS is true skip tests
+        When the TestInfra environment variable GITHUB_ACTIONS is true skip tests
         And the TestInfra command is "docker compose logs <service>"
         Then the TestInfra command stdout contains "<expected_output>"
         Examples:
