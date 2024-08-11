@@ -7,6 +7,10 @@
 
 * Add contributing guidelines. [Ben Dalling]
 
+### Fix
+
+* Attempt to upgrade libpq-dev and libpq5 to fix CVE-2024-7348. [Ben Dalling]
+
 
 ## 0.1.2 (2024-08-06)
 
