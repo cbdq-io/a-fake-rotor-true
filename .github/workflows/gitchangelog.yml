@@ -3,6 +3,10 @@
 name: Git Change Log
 
 on:
+  pull_request:
+    branches:
+      - '*'
+      - '**'
   push:
     branches:
       - '*'

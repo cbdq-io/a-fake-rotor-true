@@ -2,6 +2,10 @@
 name: Pipeline
 
 on:
+  pull_request:
+    branches:
+      - '*'
+      - '**'
   push:
     branches:
       - '*'
