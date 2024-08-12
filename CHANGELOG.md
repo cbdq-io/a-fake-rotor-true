@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 0.2.1
+
+### New
+
+* Allow valid messages to be dropped if required. [Ben Dalling]
+
+
 ## 0.2.1 (2024-08-11)
 
 ### Fix
