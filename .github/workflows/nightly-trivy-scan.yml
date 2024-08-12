@@ -1,0 +1,29 @@
+---
+name: Nightly Trivy Scan
+
+on:
+  schedule:
+    - cron: '20 0 * * *'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  NightlyTrivy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get Latest Tag
+        id: get_tag
+        run: echo "LATEST_TAG=$(make tag)" >> $GITHUB_ENV
+
+      - name: Scan Image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "${{ env.REGISTRY }}/cbdq-io/a-fake-rotor-true:${{ env.LATEST_TAG }}"
+          trivy-config: trivy.yaml

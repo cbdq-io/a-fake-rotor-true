@@ -54,7 +54,7 @@ from confluent_kafka import (Consumer, KafkaError, KafkaException, Message,
                              Producer)
 from prometheus_client import Counter, Info, Summary, start_http_server
 
-__version__ = '0.2.1'
+__version__ = '0.3.0'
 PROG = os.path.basename(sys.argv[0]).removesuffix('.py')
 logging.basicConfig()
 logger = logging.getLogger(PROG)
@@ -75,6 +75,8 @@ non_routed_error_count = Counter(f'{kafka_prefix}non_routed_error_count',
                                  'The count of messages that could not be routed.')
 prom_producer_message_count = Counter(f'{kafka_prefix}producer_message_count', 'The count of messages produced.')
 producer_message_count = redmx.RateErrorDuration()
+prom_dropped_message_count = Counter(f'{kafka_prefix}dropped_message_count', 'The count of valid messages dropped.')
+dropped_message_count = redmx.RateErrorDuration()
 
 
 class EnvironmentConfig:
@@ -601,10 +603,8 @@ class KafkaRouter:
                 # Keep DLQ headers intact by saying we have matched the message.
                 message_matched_to_rule = True
 
-        if destination_topic:
-            self.prepare_headers(message, destination_topic, message_matched_to_rule)
-            self.produce(destination_topic, message.value(), message.key(), self.headers())
-
+        self.prepare_headers(message, destination_topic, message_matched_to_rule)
+        self.produce(destination_topic, message.value(), message.key(), self.headers())
         self.report_message_matching_status(destination_topic, message, message_matched_to_rule)
 
     def prepare_headers(self, message: Message, destination_topic: str, message_matched_to_rule: bool) -> None:
@@ -666,6 +666,11 @@ class KafkaRouter:
         headers : list
             The headers of the message.
         """
+        if topic == '':
+            prom_dropped_message_count.inc()
+            dropped_message_count.increment_count()
+            return
+
         if not self.dry_run_mode():
             self.producer.produce(topic, value, key, headers=self.headers(), callback=self.delivery_report)
             self.producer.flush()
@@ -736,6 +741,7 @@ class KafkaRouter:
             logger.info('Closing the consumer.')
             logger.info(f'Consumed {consumer_message_count.count()} messages.')
             logger.info(f'Produced {producer_message_count.count()} messages.')
+            logger.info(f'Dropped {dropped_message_count.count()} messages.')
             self.consumer.close()
 
     def running(self, running: bool = None) -> bool:
