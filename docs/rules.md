@@ -76,13 +76,27 @@ These examples are taken from the tests ran as part of the system tests.
 Hello, world!
 ```
 
+
+### Message 8
+
+```json
+{
+    "company_name": "Seána Murphy & Associates",
+    "country": "FR",
+    "family_name": "Murphy",
+    "given_name": "Seána"
+}
+```
+
 ## Rules
 
 Rules are configured as JSON, the format of which must match the schema
 provided in `rule-schema.json`.  The fields are:
 
 - destination_topic: Where the message is to be routed to when the rule
-  is matched.
+  is matched.  If this is blank ("") then messages that match the rule
+  will be considered valid, not be produced onto the DLQ, but will be
+  dropped.  The consumer will be committed.
 - header: The name of a header to match against.  If provided, header_regexp
   header_regexp is required.
 - header_regexp:  The regular expression to match against the value
@@ -144,16 +158,28 @@ Checks if the VAT number has a prefix of "IE".
 }
 ```
 
+### KAFKA_ROUTER_RULE_COUNTRY_IS_FR
+
+```json
+{
+    "destination_topic": "",
+    "jmespath": "country",
+    "regexp": "^FR$",
+    "source_topic": "input.json"
+}
+```
+
 ## Outcomes
 
 In these examples, the DLQ topic has been set to `input.dlq`.
 
-| Message # | Destination Topic | Description                                                  |
-| --------- | ----------------- | ------------------------------------------------------------ |
-| 1         | input.dlq         | No country code or VAT number provided.                      |
-| 2         | input.dlq         | Country and VAT number provided, but neither match GB or IE. |
-| 3         | GB.output         | The VAT number has a prefix of GB.                           |
-| 4         | GB.output         | The country code is GB.                                      |
-| 5         | IE.output         | The VAT/CBL number has a prefix of IE.                       |
-| 6         | IE.output         | The country code is IE.                                      |
-| 7         | input.dlq         | Unable to parse JSON.                                        |
+| Message # | Destination Topic | Description                                                                                            |
+| --------- | ----------------- | ------------------------------------------------------------------------------------------------------ |
+| 1         | input.dlq         | No country code or VAT number provided.                                                                |
+| 2         | input.dlq         | Country and VAT number provided, but neither match GB or IE.                                           |
+| 3         | GB.output         | The VAT number has a prefix of GB.                                                                     |
+| 4         | GB.output         | The country code is GB.                                                                                |
+| 5         | IE.output         | The VAT/CBL number has a prefix of IE.                                                                 |
+| 6         | IE.output         | The country code is IE.                                                                                |
+| 7         | input.dlq         | Unable to parse JSON.                                                                                  |
+| 8         | ""                | A rule matched the topic, so not a DLQ matter, but drop the message as the destination topic is blank. |
