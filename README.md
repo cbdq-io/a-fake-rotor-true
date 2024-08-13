@@ -4,8 +4,8 @@ selected messages from a dead letter queue (DLQ) topic.  See the
 [DLQ replay examples](./examples/README.md) for more details.
 
 [What's with the name](docs/that-aint-an-anagram-dude.png)
-a-fake-rotor-true? The official __now__ is that it's just a random
-name :blush:
+a-fake-rotor-true? The official explanation __now__ is that it's just a
+random name :blush:
 
 ## Configuration
 
