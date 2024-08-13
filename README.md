@@ -3,7 +3,9 @@ A configurable router for Kafka messages.  Can also be used to replay
 selected messages from a dead letter queue (DLQ) topic.  See the
 [DLQ replay examples](./examples/README.md) for more details.
 
-What's with the name?  It's an anagram of "Kafka Router".
+[What's with the name](docs/that-aint-an-anagram-dude.png)
+a-fake-rotor-true? The official __now__ is that it's just a random
+name :blush:
 
 ## Configuration
 
