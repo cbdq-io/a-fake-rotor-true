@@ -722,11 +722,11 @@ class KafkaRouter:
             time_of_last_message = time.time() * 1000
 
             while self.running():
-                self.check_for_timeout(time_of_last_message)
                 msg = self.consumer.poll(timeout=1.0)
 
                 if msg is None:
                     logger.debug('No messages to consume.')
+                    self.check_for_timeout(time_of_last_message)
                     continue
 
                 with sentry_sdk.start_transaction(op='task', name='Process consumed message'):
