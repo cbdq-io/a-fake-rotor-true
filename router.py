@@ -54,7 +54,7 @@ from confluent_kafka import (Consumer, KafkaError, KafkaException, Message,
                              Producer)
 from prometheus_client import Counter, Info, Summary, start_http_server
 
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 PROG = os.path.basename(sys.argv[0]).removesuffix('.py')
 logging.basicConfig()
 logger = logging.getLogger(PROG)
@@ -722,11 +722,11 @@ class KafkaRouter:
             time_of_last_message = time.time() * 1000
 
             while self.running():
-                self.check_for_timeout(time_of_last_message)
                 msg = self.consumer.poll(timeout=1.0)
 
                 if msg is None:
                     logger.debug('No messages to consume.')
+                    self.check_for_timeout(time_of_last_message)
                     continue
 
                 with sentry_sdk.start_transaction(op='task', name='Process consumed message'):
