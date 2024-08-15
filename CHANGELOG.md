@@ -1,6 +1,19 @@
 # Changelog
 
 
+## 0.3.0
+
+### Changes
+
+* Bump Sentry SDK from 2.12.0 to 2.13.0. [Ben Dalling]
+
+### Fix
+
+* Add a description to the container. [Ben Dalling]
+
+* Patch an edge case issue when DLQ mode is on. [Ben Dalling]
+
+
 ## 0.3.0 (2024-08-12)
 
 ### New

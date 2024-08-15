@@ -1,5 +1,7 @@
 FROM python:3.12
 
+LABEL org.opencontainers.image.description A configurable router for Kafka messages.
+
 RUN useradd \
     --comment "Kafka Router" \
     --home /home/router \
