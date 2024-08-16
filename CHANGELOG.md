@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 0.3.1
+
+### New
+
+* Add code of conduct. [Ben Dalling]
+
+
 ## 0.3.1 (2024-08-15)
 
 ### Changes
