@@ -12,7 +12,7 @@ RUN useradd \
     router \
   && apt-get clean \
   && apt-get update \
-  && apt-get --yes upgrade libpq-dev libpq5 \
+  && apt-get --yes upgrade libaom3 libpq-dev libpq5 \
   && apt-get clean \
   && rm -rf /vaar/lib/apt/lists \
   && chmod 0700 /home/router
