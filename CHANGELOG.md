@@ -7,6 +7,10 @@
 
 * Add code of conduct. [Ben Dalling]
 
+### Fix
+
+* CVE-2024-5171. [Ben Dalling]
+
 
 ## 0.3.1 (2024-08-15)
 
