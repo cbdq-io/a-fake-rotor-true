@@ -69,6 +69,7 @@ If a message is placed upon the DLQ topic, we follow the example as set in
 In this example we have set KAFKA_ROUTER_DLQ_ID to "router" and the headers will look something like this:
 
 | Key | Example Value | Description |
+| --- | ------------- | ----------- |
 | __router.errors.topic | input | The name of the topic tha the message was consumed from. |
 | __router.errors.partition | 1 | The partition number that the consumed message was on. |
 | __router.errors.offset | 8583 | The offset of the consumed consumed message within the partition. |
