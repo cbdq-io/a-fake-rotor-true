@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 0.3.2
+
+### New
+
+* Publish (and check) the UID/GID of the container user. [Ben Dalling]
+
+
 ## 0.3.2 (2024-08-22)
 
 ### New

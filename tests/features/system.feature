@@ -25,6 +25,8 @@ Feature: System Tests
         And the TestInfra group is "router"
         Then the TestInfra user is present
         And the TestInfra user group is router
+        And the TestInfra user uid is 1000
+        And the TestInfra user gid is 1000
         And the TestInfra user home is /home/router
         And the TestInfra user shell is /usr/sbin/nologin
         And the TestInfra group is present

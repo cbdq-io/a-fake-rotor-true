@@ -69,8 +69,15 @@ If a message is placed upon the DLQ topic, we follow the example as set in
 In this example we have set KAFKA_ROUTER_DLQ_ID to "router" and the headers will look something like this:
 
 | Key | Example Value | Description |
+| --- | ------------- | ----------- |
 | __router.errors.topic | input | The name of the topic tha the message was consumed from. |
 | __router.errors.partition | 1 | The partition number that the consumed message was on. |
 | __router.errors.offset | 8583 | The offset of the consumed consumed message within the partition. |
 | __router.errors.exception.message | No matching rules for message. | The exception message of why the message is on the DLQ. |
 | __router.errors.exception.stacktrace | json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0) | Any stack trace (if available) associated with the exception. |
+
+### Non-Root User
+
+The container runs as a non-root user called router.  It has a uid of 1000
+and a group also called router.  This is the primary group for the user
+and the GID is also 1000.
