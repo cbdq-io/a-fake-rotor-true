@@ -10,13 +10,6 @@
 
 ## 0.3.3 (2024-09-02)
 
-### Changes
-
-* Bump Confluent Kafka version from 2.5.0 to 2.5.3. [Ben Dalling]
-
-
-## 0.3.3 (2024-09-02)
-
 ### New
 
 * Publish (and check) the UID/GID of the container user. [Ben Dalling]
