@@ -1,7 +1,14 @@
 # Changelog
 
 
-## 0.3.3
+## 0.3.4
+
+### Changes
+
+* Bump Confluent Kafka version from 2.5.0 to 2.5.3. [Ben Dalling]
+
+
+## 0.3.3 (2024-09-02)
 
 ### New
 
