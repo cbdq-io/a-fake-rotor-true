@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 0.3.5 (2024-09-10)
+
+### Changes
+
+* Bump Sentry SDK from 2.13.0 to 2.14.0. [Ben Dalling]
+
+
 ## 0.3.4 (2024-09-03)
 
 ### Changes
