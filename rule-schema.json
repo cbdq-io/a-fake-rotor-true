@@ -51,8 +51,8 @@
         }
     },
     "properties": {
-        "destination_topic": {
-            "description": "The topic to which data will be sent.",
+        "destination_topics": {
+            "description": "The topics (comma separated) to which data will be sent.",
             "type": "string"
         },
         "header": {
@@ -78,7 +78,7 @@
     },
     "required": [
         "source_topic",
-        "destination_topic"
+        "destination_topics"
     ],
     "type": "object"
 }
