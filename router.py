@@ -54,7 +54,7 @@ from confluent_kafka import (Consumer, KafkaError, KafkaException, Message,
                              Producer)
 from prometheus_client import Counter, Info, Summary, start_http_server
 
-__version__ = '0.3.6'
+__version__ = '0.4.0'
 PROG = os.path.basename(sys.argv[0]).removesuffix('.py')
 logging.basicConfig()
 logger = logging.getLogger(PROG)
@@ -250,7 +250,7 @@ class KafkaRouterRule:
             sys.exit(2)
 
         self.name = name.removeprefix('KAFKA_ROUTER_RULE_')
-        self.destination_topic = instance['destination_topic']
+        self.destination_topics = instance['destination_topics']
         self.header = instance.get('header', None)
         self.header_regexp = instance.get('header_regexp', None)
         self.jmespath = instance.get('jmespath', None)
@@ -307,7 +307,7 @@ class KafkaRouterRule:
             return False
 
         log_message = f'Message on topic "{message.topic()}" ({message.partition()}/{message.offset()}) '
-        log_message += f'matches rule "{self.name}" ({self.destination_topic}).'
+        log_message += f'matches rule "{self.name}" ({self.destination_topics}).'
         logger.debug(log_message)
         return True
 
@@ -582,18 +582,18 @@ class KafkaRouter:
         message : Message
             The message to be matched.
         """
-        destination_topic = self.DLQ_topic_name
+        destination_topics = self.DLQ_topic_name
         message_matched_to_rule = False
         self.headers(message.headers())
 
         for rule in self.rules:
             try:
                 if rule.is_match(message):
-                    destination_topic = rule.destination_topic
+                    destination_topics = rule.destination_topics
                     message_matched_to_rule = True
                     break
             except json.decoder.JSONDecodeError as ex:
-                destination_topic = self.DLQ_topic_name
+                destination_topics = self.DLQ_topic_name
                 self.upsert_header(f'__{self.get_dlq_id()}.topic', message.topic())
                 self.upsert_header(f'__{self.get_dlq_id()}.partition', message.partition())
                 self.upsert_header(f'__{self.get_dlq_id()}.offset', message.offset())
@@ -603,11 +603,11 @@ class KafkaRouter:
                 # Keep DLQ headers intact by saying we have matched the message.
                 message_matched_to_rule = True
 
-        self.prepare_headers(message, destination_topic, message_matched_to_rule)
-        self.produce(destination_topic, message.value(), message.key(), self.headers())
-        self.report_message_matching_status(destination_topic, message, message_matched_to_rule)
+        self.prepare_headers(message, destination_topics, message_matched_to_rule)
+        self.produce(destination_topics, message.value(), message.key(), self.headers())
+        self.report_message_matching_status(destination_topics, message, message_matched_to_rule)
 
-    def prepare_headers(self, message: Message, destination_topic: str, message_matched_to_rule: bool) -> None:
+    def prepare_headers(self, message: Message, destination_topics: str, message_matched_to_rule: bool) -> None:
         """
         Prepare headers before producing a message.
 
@@ -622,7 +622,7 @@ class KafkaRouter:
         message_matched_to_rule : bool
             Was the message matched to any rule.
         """
-        if destination_topic == self.DLQ_topic_name and not message_matched_to_rule:
+        if destination_topics == self.DLQ_topic_name and not message_matched_to_rule:
             self.upsert_header(f'__{self.get_dlq_id()}.topic', message.topic())
             self.upsert_header(f'__{self.get_dlq_id()}.partition', message.partition())
             self.upsert_header(f'__{self.get_dlq_id()}.offset', message.offset())
@@ -672,13 +672,16 @@ class KafkaRouter:
             return
 
         if not self.dry_run_mode():
-            self.producer.produce(topic, value, key, headers=self.headers(), callback=self.delivery_report)
-            self.producer.flush()
-            logger.debug('Successfully flushed message on the producer.')
-            prom_producer_message_count.inc()
-            producer_message_count.increment_count()
+            topics = topic.split(',')
 
-    def report_message_matching_status(self, destination_topic: str, message: Message,
+            for topic in topics:
+                self.producer.produce(topic, value, key, headers=self.headers(), callback=self.delivery_report)
+                self.producer.flush()
+                logger.debug('Successfully flushed message on the producer.')
+                prom_producer_message_count.inc()
+                producer_message_count.increment_count()
+
+    def report_message_matching_status(self, destination_topics: str, message: Message,
                                        message_matched_to_rule: bool) -> None:
         """
         Report and set metrics for if the message was matched or not.
@@ -688,7 +691,7 @@ class KafkaRouter:
 
         Parameters
         ----------
-        destination_topic: str
+        destination_topics: str
             The name of the topic that the message is being routed to.
         message: Message
             The message that was matched.
@@ -696,7 +699,7 @@ class KafkaRouter:
             True if the message was successfully matched to a routing rule,
             False otherwise.
         """
-        if message_matched_to_rule and destination_topic == self.DLQ_topic_name:
+        if message_matched_to_rule and destination_topics == self.DLQ_topic_name:
             non_routed_error_count.inc()
         elif message_matched_to_rule:
             pass

@@ -60,7 +60,7 @@ In this example, the rule is the most basic it can be:
 
 ```JSON
 {
-    "destination_topic": "replay_example1",
+    "destination_topics": "replay_example1",
     "source_topic": "replay_example.dlq"
 }
 ```
@@ -161,7 +161,7 @@ In this example, the rule to be applied is:
 
 ```JSON
 {
-  destination_topic: "replay_example2",
+  destination_topics: "replay_example2",
   header: "__example_errors.topic",
   header_regexp: "^example2$",
   source_topic: "replay_example.dlq"
@@ -226,7 +226,7 @@ In this example, the rule to be applied is:
 
 ```JSON
 {
-  destination_topic: "replay_example2",
+  destination_topics: "replay_example2",
   header: "__example_errors.topic",
   header_regexp: "^example2$",
   regexp: "Message 2",

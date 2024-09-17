@@ -93,10 +93,12 @@ Hello, world!
 Rules are configured as JSON, the format of which must match the schema
 provided in `rule-schema.json`.  The fields are:
 
-- destination_topic: Where the message is to be routed to when the rule
+- destination_topics: Where the message is to be routed to when the rule
   is matched.  If this is blank ("") then messages that match the rule
   will be considered valid, not be produced onto the DLQ, but will be
-  dropped.  The consumer will be committed.
+  dropped.  The consumer will be committed.  Topics can be comma
+  separated which means that the messages that match the rule will be
+  sent to each of the topics.
 - header: The name of a header to match against.  If provided, header_regexp
   header_regexp is required.
 - header_regexp:  The regular expression to match against the value
@@ -118,7 +120,7 @@ Checks if the VAT number has a prefix of "IE".
 
 ```json
 {
-    "destination_topic": "IE.output",
+    "destination_topics": "IE.output",
     "jmespath": "vat_number",
     "regexp": "^IE",
     "source_topic": "input"
@@ -129,7 +131,7 @@ Checks if the VAT number has a prefix of "IE".
 
 ```json
 {
-    "destination_topic": "GB.output",
+    "destination_topics": "GB.output",
     "jmespath": "country",
     "regexp": "^GB$",
     "source_topic": "input"
@@ -140,7 +142,7 @@ Checks if the VAT number has a prefix of "IE".
 
 ```json
 {
-    "destination_topic": "IE.output",
+    "destination_topics": "IE.output",
     "jmespath": "country",
     "regexp": "^IE$",
     "source_topic": "input"
@@ -151,7 +153,7 @@ Checks if the VAT number has a prefix of "IE".
 
 ```json
 {
-    "destination_topic": "GB.output",
+    "destination_topics": "GB.output",
     "jmespath": "vat_number",
     "regexp": "^GB",
     "source_topic": "input"
@@ -162,7 +164,7 @@ Checks if the VAT number has a prefix of "IE".
 
 ```json
 {
-    "destination_topic": "",
+    "destination_topics": "",
     "jmespath": "country",
     "regexp": "^FR$",
     "source_topic": "input.json"
