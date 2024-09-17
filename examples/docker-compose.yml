@@ -10,7 +10,7 @@ services:
       KAFKA_PRODUCER_BOOTSTRAP_SERVERS: kafka:29092
       KAFKA_ROUTER_DLQ_MODE: 1
       KAFKA_ROUTER_DRY_RUN_MODE: "${KAFKA_ROUTER_DRY_RUN_MODE:-0}"
-      KAFKA_ROUTER_RULE_REPLAY_ALL_DLQ_MESSAGES: '{"destination_topic":"replay_example1","source_topic":"replay_example.dlq"}'
+      KAFKA_ROUTER_RULE_REPLAY_ALL_DLQ_MESSAGES: '{"destination_topics":"replay_example1","source_topic":"replay_example.dlq"}'
       KAFKA_ROUTER_TIMEOUT_MS: 3000
       LOG_LEVEL: DEBUG
     image: a-fake-rotor-true-router:latest
@@ -25,7 +25,7 @@ services:
       KAFKA_PRODUCER_BOOTSTRAP_SERVERS: kafka:29092
       KAFKA_ROUTER_DLQ_MODE: 1
       KAFKA_ROUTER_DRY_RUN_MODE: "${KAFKA_ROUTER_DRY_RUN_MODE:-0}"
-      KAFKA_ROUTER_RULE_REPLAY_EXAMPLE2_HEADER: '{"destination_topic":"replay_example2","source_topic":"replay_example.dlq","header":"__example_errors.topic","header_regexp":"^example2$"}'
+      KAFKA_ROUTER_RULE_REPLAY_EXAMPLE2_HEADER: '{"destination_topics":"replay_example2","source_topic":"replay_example.dlq","header":"__example_errors.topic","header_regexp":"^example2$"}'
       KAFKA_ROUTER_TIMEOUT_MS: 3000
       LOG_LEVEL: DEBUG
     image: a-fake-rotor-true-router:latest
@@ -40,7 +40,7 @@ services:
       KAFKA_PRODUCER_BOOTSTRAP_SERVERS: kafka:29092
       KAFKA_ROUTER_DLQ_MODE: 1
       KAFKA_ROUTER_DRY_RUN_MODE: "${KAFKA_ROUTER_DRY_RUN_MODE:-0}"
-      KAFKA_ROUTER_RULE_REPLAY_EXAMPLE2_HEADER_AND_MESSAGE_2: '{"destination_topic":"replay_example3","source_topic":"replay_example.dlq","header":"__example_errors.topic","header_regexp":"^example2$","regexp":"Message 2"}'
+      KAFKA_ROUTER_RULE_REPLAY_EXAMPLE2_HEADER_AND_MESSAGE_2: '{"destination_topics":"replay_example3","source_topic":"replay_example.dlq","header":"__example_errors.topic","header_regexp":"^example2$","regexp":"Message 2"}'
       KAFKA_ROUTER_TIMEOUT_MS: 3000
       LOG_LEVEL: DEBUG
     image: a-fake-rotor-true-router:latest

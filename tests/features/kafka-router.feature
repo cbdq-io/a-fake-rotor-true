@@ -21,14 +21,14 @@ Feature: The KafkaRouter class.
 
         Examples:
             | dlq_topic | rule                                                                                          | source_topic |
-            | None      | {"destination_topic":"GB.output","jmespath":"country","regexp":"^GB$","source_topic":"input"} | input        |
+            | None      | {"destination_topics":"GB.output","jmespath":"country","regexp":"^GB$","source_topic":"input"} | input        |
 
     Scenario Outline: DLQ ID
         Given a KafkaRouter with DLQ topic <dlq_topic>
         When OS environment KAFKA_ROUTER_DLQ_ID is <kafka_router_dlq_id>
         And OS environment KAFKA_CONSUMER_CLIENT_ID is <kafka_consumer_client_id>
         And OS environment KAFKA_CONSUMER_GROUP_ID is <kafka_consumer_group_id>
-        And OS environment KAFKA_ROUTER_RULE_1 is {"destination_topic":"output","source_topic":"input"}
+        And OS environment KAFKA_ROUTER_RULE_1 is {"destination_topics":"output","source_topic":"input"}
         Then DLQ ID is <expected_value>
 
         Examples:
