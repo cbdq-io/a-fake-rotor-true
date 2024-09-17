@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 0.3.6
+
+### Fix
+
+* Rename destination_topic to destination_topics. [Ben Dalling]
+
+
 ## 0.3.6 (2024-09-15)
 
 ### Fix
