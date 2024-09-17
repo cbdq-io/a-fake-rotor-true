@@ -672,11 +672,14 @@ class KafkaRouter:
             return
 
         if not self.dry_run_mode():
-            self.producer.produce(topic, value, key, headers=self.headers(), callback=self.delivery_report)
-            self.producer.flush()
-            logger.debug('Successfully flushed message on the producer.')
-            prom_producer_message_count.inc()
-            producer_message_count.increment_count()
+            topics = topic.split(',')
+
+            for topic in topics:
+                self.producer.produce(topic, value, key, headers=self.headers(), callback=self.delivery_report)
+                self.producer.flush()
+                logger.debug('Successfully flushed message on the producer.')
+                prom_producer_message_count.inc()
+                producer_message_count.increment_count()
 
     def report_message_matching_status(self, destination_topics: str, message: Message,
                                        message_matched_to_rule: bool) -> None:

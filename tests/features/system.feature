@@ -17,6 +17,7 @@ Feature: System Tests
         | { "given_name": "Seána", "family_name": "Murphy", "company_name": "Seána Murphy & Associates", "country": "IE"}                    | test       | TEST01F      | input.json |
         | Hello, world!                                                                                                                      | test       | TEST02A      | input.json |
         | { "given_name": "Seána", "family_name": "Murphy", "company_name": "Seána Murphy & Associates", "country": "FR"}                    | test       | TEST03A      | input.json |
+        | { "given_name": "Ben", "family_name": "Dalling", "company_name": "Cloud Based DQ Ltd." }                                           | test       | TEST04A      | both.json  |
 
 
     Scenario: Verify the Container Build
@@ -67,12 +68,12 @@ Feature: System Tests
         And the TestInfra command stdout contains "<expected_output>"
 
         Examples:
-        | expected_output                                   |
-        | docker_consumer_message_count_total 9.0           |
-        | docker_consumer_message_committed_count_total 9.0 |
-        | docker_producer_message_count_total 8.0           |
-        | docker_non_routed_error_count_total 4.0           |
-        | docker_dropped_message_count_total 1.0            |
+        | expected_output                                    |
+        | docker_consumer_message_count_total 10.0           |
+        | docker_consumer_message_committed_count_total 10.0 |
+        | docker_producer_message_count_total 10.0           |
+        | docker_non_routed_error_count_total 4.0            |
+        | docker_dropped_message_count_total 1.0             |
 
     Scenario Outline: Track Test Message Destinations
         Given a Kafka Consumer Config
@@ -92,6 +93,8 @@ Feature: System Tests
         | test        | TEST01E      | IE.output.json |
         | test        | TEST01F      | IE.output.json |
         | test        | TEST02A      | router.dlq     |
+        | test        | TEST04A      | GB.output.json |
+        | test        | TEST04A      | IE.output.json |
 
     Scenario: Stop The Router Container
         Given the TestInfra host with URL "local://" is ready
