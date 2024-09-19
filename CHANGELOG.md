@@ -1,7 +1,14 @@
 # Changelog
 
 
-## 0.4.0
+## 0.4.1
+
+### Fix
+
+* Rebuild to remove CVE-2024-45490, CVE-2024-45491 and CVE-2024-45492 from the image. [Ben Dalling]
+
+
+## 0.4.0 (2024-09-17)
 
 ### Fix
 
