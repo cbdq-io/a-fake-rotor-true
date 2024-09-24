@@ -4,11 +4,11 @@ confluent-kafka==2.5.3
 jmespath==1.0.1
 jsonschema==4.23.0
 jsonschema-specifications==2023.12.1
-prometheus_client==0.20.0
+prometheus_client==0.21.0
 redmx==0.2.2
 referencing==0.35.1
 rpds-py==0.20.0
 sentry-sdk==2.14.0
-setuptools==72.2.0
-urllib3==2.2.2
+setuptools==75.1.0
+urllib3==2.2.3
 wheel==0.44.0
