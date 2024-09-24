@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 0.4.2 (2024-09-24)
+
+### Changes
+
+* Bump Prometheus Client version from 0.20.0 to 0.21.0. [Ben Dalling]
+
+
 ## 0.4.1 (2024-09-19)
 
 ### Fix
