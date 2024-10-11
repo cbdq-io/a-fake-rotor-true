@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 0.4.4
+
+### Fix
+
+* Update (amongst other Python packages) confluent-kafka from 2.5.3 to 2.6.0. [Ben Dalling]
+
+
 ## 0.4.3 (2024-10-08)
 
 ### Fix
