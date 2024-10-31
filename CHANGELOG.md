@@ -1,7 +1,16 @@
 # Changelog
 
 
-## 0.4.4
+## 0.4.5
+
+### Fix
+
+* New release also fixes CVE-2023-49462. [Ben Dalling]
+
+* Bump Sentry SDK from 2.16.0 to 2.17.0. [Ben Dalling]
+
+
+## 0.4.4 (2024-10-11)
 
 ### Fix
 

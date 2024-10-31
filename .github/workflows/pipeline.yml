@@ -17,6 +17,7 @@ on:
   workflow_dispatch:
 
 env:
+  ACTIONS_RUNTIME_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   REGISTRY: ghcr.io
 
 jobs:
