@@ -3,7 +3,7 @@ name: Nightly Trivy Scan
 
 on:
   schedule:
-    - cron: '20 0 * * *'
+    - cron: '20 0 * * TUE
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
