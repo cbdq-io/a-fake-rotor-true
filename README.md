@@ -1,4 +1,8 @@
 # a-fake-rotor-true
+
+**INFO**: Due to a change in direction of architecture of our client, this
+project is to be archived.
+
 A configurable router for Kafka messages.  Can also be used to replay
 selected messages from a dead letter queue (DLQ) topic.  See the
 [DLQ replay examples](./examples/README.md) for more details.
